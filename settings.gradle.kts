@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "OkSharedPreferences"
 include(":app")
-include(":library")
+include(":OkSharedPreferences")

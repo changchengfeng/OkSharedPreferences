@@ -1,6 +1,5 @@
 package online.greatfeng.library
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import java.io.DataOutputStream
@@ -9,7 +8,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 
-class OkSharedPreferencesImpl(val context: Context, val name: String) : OkSharedPreferences {
+class OkSharedPreferencesImpl(val dir: String, val name: String) : OkSharedPreferences {
 
 
     private val readWriteLock by lazy { ReentrantReadWriteLock() }
@@ -23,10 +22,9 @@ class OkSharedPreferencesImpl(val context: Context, val name: String) : OkShared
 
     companion object {
         const val TAG = "OkSharedPreferencesImpl"
-
-
         const val SUFFIX_OKSP = ".oksp"
         const val SUFFIX_BAK = ".bak"
+
         const val B = 1 // Boolean
         const val F = 2  // Float
         const val I = 4  // Int
@@ -38,12 +36,12 @@ class OkSharedPreferencesImpl(val context: Context, val name: String) : OkShared
 
     fun clearData() {
         cacheMap.clear()
-        val okSpFile = File(context.dataDir, name + SUFFIX_OKSP)
+        val okSpFile = File(dir, name + SUFFIX_OKSP)
         okSpFile.deleteOnExit()
     }
 
     fun loadDataFromDisk() {
-        val okSpFile = File(context.dataDir, name + SUFFIX_OKSP)
+        val okSpFile = File(dir, name + SUFFIX_OKSP)
         Log.d(TAG, "okSpFile $okSpFile")
         if (!okSpFile.exists()) {
             okSpFile.createNewFile()
@@ -105,7 +103,7 @@ class OkSharedPreferencesImpl(val context: Context, val name: String) : OkShared
 
 
     fun saveDisk() {
-        val bakFile = File(context.dataDir, name + SUFFIX_BAK)
+        val bakFile = File(dir, name + SUFFIX_BAK)
         if (bakFile.exists()) {
             bakFile.delete()
         }
@@ -154,7 +152,7 @@ class OkSharedPreferencesImpl(val context: Context, val name: String) : OkShared
             }
             it.flush()
             it.close()
-            val okSpFile = File(context.dataDir, name + SUFFIX_OKSP)
+            val okSpFile = File(dir, name + SUFFIX_OKSP)
             okSpFile.deleteOnExit()
             bakFile.renameTo(okSpFile)
         }

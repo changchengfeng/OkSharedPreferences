@@ -28,7 +28,6 @@ abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
         stopWatching()
     }
 
-
     fun startWatching() {
         if (mDescriptors == null) {
             mDescriptors =
@@ -48,6 +47,9 @@ abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
     abstract fun onEvent(event: Int, path: String?)
 
     companion object {
+
+        private const val TAG = "OkFileObserver"
+
         /** Event type: Data was read from a file  */
         const val ACCESS = 0x00000001
 
@@ -84,27 +86,34 @@ abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
         /** Event type: The monitored file or directory was moved; monitoring continues  */
         const val MOVE_SELF = 0x00000800
 
+        @NotifyEventType
+        const val ALL_EVENTS = (ACCESS or MODIFY or ATTRIB or CLOSE_WRITE
+                or CLOSE_NOWRITE or OPEN or MOVED_FROM or MOVED_TO or DELETE or CREATE
+                or DELETE_SELF or MOVE_SELF)
 
-        private const val LOG_TAG = "FileObserver"
 
-        private val s_observerThread = ObserverThread()
+        val s_observerThread = ObserverThread()
 
         init {
+            Log.d(TAG, "s_observerThread.start() called")
             s_observerThread.start()
         }
     }
 
 
-    private class ObserverThread : Thread("FileObserver") {
+    class ObserverThread : Thread("OkFileObserver") {
         private val m_observers = HashMap<Int, WeakReference<*>>()
         private val mRealObservers = SparseArray<WeakReference<*>>()
         private val m_fd: Int
 
         init {
+            System.loadLibrary("OkSharedPreferences")
             m_fd = init()
+            Log.d(TAG, "init called m_fd $m_fd")
         }
 
         override fun run() {
+            Log.d(TAG, "run() m_fd $m_fd")
             observe(m_fd)
         }
 
@@ -112,11 +121,16 @@ abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
             files: List<File>,
             @NotifyEventType mask: Int, observer: OkFileObserver
         ): IntArray {
+            Log.d(
+                TAG,
+                "startWatching() called with: files = $files, mask = $mask, observer = $observer"
+            )
             val count = files.size
             val paths = arrayOfNulls<String>(count)
             for (i in 0 until count) {
                 paths[i] = files[i].absolutePath
             }
+            Log.d(TAG, "startWatching: ${Arrays.toString(paths)}")
             val wfds = IntArray(count)
             Arrays.fill(wfds, -1)
             startWatching(m_fd, paths, mask, wfds)
@@ -128,10 +142,12 @@ abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
                     }
                 }
             }
+            Log.d(TAG, "startWatching wfds : ${Arrays.toString(wfds)}")
             return wfds
         }
 
         fun stopWatching(descriptors: IntArray?) {
+            Log.d(TAG, "stopWatching() m_fd $m_fd , descriptors = $descriptors")
             stopWatching(m_fd, descriptors)
         }
 
@@ -149,15 +165,13 @@ abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
             }
 
             // ...then call out to the observer without the sync lock held
-            if (observer != null) {
-                try {
-                    observer?.onEvent(mask, path)
-                } catch (throwable: Throwable) {
-                    Log.wtf(
-                        LOG_TAG,
-                        "Unhandled exception in FileObserver $observer", throwable
-                    )
-                }
+            try {
+                observer?.onEvent(mask, path)
+            } catch (throwable: Throwable) {
+                Log.wtf(
+                    TAG,
+                    "Unhandled exception in FileObserver $observer", throwable
+                )
             }
         }
 

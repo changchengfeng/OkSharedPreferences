@@ -46,10 +46,13 @@ const val KEY_TEST_FLOAT = "test_Float"
 const val KEY_TEST_INT = "test_Int"
 const val KEY_TEST_LONG = "test_Long"
 const val KEY_TEST_STRING = "test_String"
+const val KEY_TEST_XXX = "test_XXX"
 const val KEY_TEST_SET = "test_Set"
+
 
 @Composable
 fun Greeting() {
+    var value  = 0
     val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize()) {
         Button(
@@ -63,10 +66,11 @@ fun Greeting() {
                 editor.putBoolean(KEY_TEST_BOOLEAN, true)
                 editor.putFloat(KEY_TEST_FLOAT, 3.1415926f)
                 editor.putInt(KEY_TEST_INT, 123456)
+                editor.putInt(KEY_TEST_XXX, value++)
                 editor.putLong(KEY_TEST_LONG, 987654321L)
                 editor.putString(
                     KEY_TEST_STRING,
-                    "abc这里的when表达式使用了没有参数的形式，而是直接在每个分支中写上条件。当yourValue小于80时，执行相应的代码块。如果需要执行其他比较，你可以根据实际情况添加相应的分支。"
+                    "Stop watching for events. Some events may be in process, so events may continue to be reported even after this method completes. If monitoring is already stopped, this call has no effect."
                 )
                 editor.putStringSet(
                     KEY_TEST_SET, setOf(
@@ -97,6 +101,9 @@ fun Greeting() {
 
                 val testInt = okSharedPreferences.getInt(KEY_TEST_INT, 0)
                 Log.d(TAG, "testInt: $testInt")
+
+                val testXXX = okSharedPreferences.getInt(KEY_TEST_XXX, 0)
+                Log.d(TAG, "testXXX: $testXXX")
 
                 val testLong = okSharedPreferences.getLong(KEY_TEST_LONG, 0L)
                 Log.d(TAG, "testLong: $testLong")

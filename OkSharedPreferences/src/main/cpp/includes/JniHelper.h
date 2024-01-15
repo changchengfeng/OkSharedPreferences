@@ -6,7 +6,7 @@
 #define OKSHAREDPREFERENCES_JNIHELPER_H
 
 #include <jni.h>
+extern jmethodID method_onEvent;
+extern JNIEnv *env;
 
-static jmethodID method_onEvent;
-static JNIEnv *env;
 #endif //OKSHAREDPREFERENCES_JNIHELPER_H
