@@ -29,7 +29,7 @@ Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_ob
             if (errno == EINTR)
                 continue;
 
-            LOGE("***** ERROR! android_os_fileobserver_observe() got a short event!");
+            LOGE("***** ERROR! ok_fileobserver_observe() got a short event!");
             return;
         }
 
@@ -42,7 +42,7 @@ Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_ob
             if (event->len > 0) {
                 path = env->NewStringUTF(event->name);
             }
-
+            LOGD("CallVoidMethod... method_onEvent %d",method_onEvent);
             env->CallVoidMethod(thiz, method_onEvent, event->wd, event->mask, path);
             if (env->ExceptionCheck()) {
                 env->ExceptionDescribe();
@@ -62,6 +62,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_startWatching(
         JNIEnv *env, jobject thiz, jint fd, jobjectArray paths, jint mask, jintArray wfds) {
+    LOGD("ObserverThread_startWatching fd = %d",fd);
     if (fd >= 0) {
         size_t count = env->GetArrayLength(paths);
         size_t size = env->GetArrayLength(wfds);
@@ -69,10 +70,11 @@ Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_st
         for (jsize i = 0; i < count; ++i) {
             jstring pathString = (jstring) env->GetObjectArrayElement(paths, i);
             jboolean isCopy;
-            const jchar *path = env->GetStringChars(pathString, &isCopy);
+            const char *path = env->GetStringUTFChars(pathString, &isCopy);
+            LOGD("ObserverThread_startWatching fd = %s",path);
             buffer[i] = inotify_add_watch(fd, reinterpret_cast<const char *>(path), mask);
             if (isCopy) {
-                env->ReleaseStringChars(pathString, path);
+                env->ReleaseStringUTFChars(pathString, path);
             }
         }
         env->SetIntArrayRegion(wfds, 0, size, buffer);

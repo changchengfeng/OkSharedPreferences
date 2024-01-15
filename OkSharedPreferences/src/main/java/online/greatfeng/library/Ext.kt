@@ -25,7 +25,7 @@ fun String?.checkValue(): Boolean {
 }
 
 fun Set<String>?.checkValue(): Boolean {
-    if (this != null && this.any { it.length>= MAX_LEN  }) {
+    if (this != null && this.any { it.length >= MAX_LEN }) {
         Log.e(TAG, "$this key or value can not be null and length must less $MAX_LEN")
         return false
     }
@@ -34,7 +34,7 @@ fun Set<String>?.checkValue(): Boolean {
 
 
 fun Context.getOkSharedPreferences(name: String): OkSharedPreferences {
-    return OkSharedPreferencesImpl(this, name)
+    return OkSharedPreferencesManager.getInstance(this).getOkSharedPreferences(name)
 }
 
 fun ByteBuffer.getLen(): Int {
