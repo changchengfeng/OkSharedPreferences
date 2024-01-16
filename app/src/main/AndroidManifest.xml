@@ -23,6 +23,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".SharedPreferenceService"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":remoter"></service>
     </application>
 
 </manifest>

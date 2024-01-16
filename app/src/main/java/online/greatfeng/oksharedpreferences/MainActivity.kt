@@ -1,6 +1,12 @@
 package online.greatfeng.oksharedpreferences
 
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
+import android.os.Message
+import android.os.Messenger
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +28,7 @@ import online.greatfeng.library.getOkSharedPreferences
 import online.greatfeng.oksharedpreferences.ui.theme.OkSharedPreferencesTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -35,12 +42,24 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        bindService(Intent(applicationContext, SharedPreferenceService::class.java), object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                Log.d(TAG, "onServiceConnected() called with: name = $name, service = $service")
+                service?.let {
+                    messenger = Messenger(service)
+                }
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+            }
+
+        }, BIND_AUTO_CREATE)
     }
 }
 
+private var messenger: Messenger? = null
 private const val TAG = "MainActivity"
-
-
 const val KEY_TEST_BOOLEAN = "test_Boolean"
 const val KEY_TEST_FLOAT = "test_Float"
 const val KEY_TEST_INT = "test_Int"
@@ -52,7 +71,7 @@ const val KEY_TEST_SET = "test_Set"
 
 @Composable
 fun Greeting() {
-    var value  = 0
+    var value = 0
     val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize()) {
         Button(
@@ -96,7 +115,7 @@ fun Greeting() {
                 val testBoolean = okSharedPreferences.getBoolean(KEY_TEST_BOOLEAN, false)
                 Log.d(TAG, "testBoolean: $testBoolean")
 
-                val testFloat= okSharedPreferences.getFloat(KEY_TEST_FLOAT, 0f)
+                val testFloat = okSharedPreferences.getFloat(KEY_TEST_FLOAT, 0f)
                 Log.d(TAG, "testFloat: $testFloat")
 
                 val testInt = okSharedPreferences.getInt(KEY_TEST_INT, 0)
@@ -117,6 +136,41 @@ fun Greeting() {
             },
             content = {
                 Text("show")
+            }
+        )
+
+        // other
+
+        Button(
+            modifier = Modifier
+                .wrapContentWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            onClick = { /* 按钮点击时执行的操作 */
+                messenger?.let {
+                    val msg = Message()
+                    msg.what = SharedPreferenceService.SAVE
+                    it.send(msg)
+                }
+            },
+            content = {
+                Text("other_save")
+            }
+        )
+        Button(
+            modifier = Modifier
+                .wrapContentWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            onClick = { /* 按钮点击时执行的操作 */
+                messenger?.let {
+                    val msg = Message()
+                    msg.what = SharedPreferenceService.SHOW
+                    it.send(msg)
+                }
+            },
+            content = {
+                Text("other_show")
             }
         )
     }

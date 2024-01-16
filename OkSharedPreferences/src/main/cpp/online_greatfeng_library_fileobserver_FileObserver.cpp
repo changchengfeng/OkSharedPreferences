@@ -42,7 +42,7 @@ Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_ob
             if (event->len > 0) {
                 path = env->NewStringUTF(event->name);
             }
-            LOGD("CallVoidMethod... method_onEvent %d",method_onEvent);
+//            LOGD("CallVoidMethod... method_onEvent %d",method_onEvent);
             env->CallVoidMethod(thiz, method_onEvent, event->wd, event->mask, path);
             if (env->ExceptionCheck()) {
                 env->ExceptionDescribe();
