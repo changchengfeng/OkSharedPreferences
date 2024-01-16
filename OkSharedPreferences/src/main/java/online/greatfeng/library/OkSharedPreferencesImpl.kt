@@ -1,20 +1,28 @@
 package online.greatfeng.library
 
 import android.content.SharedPreferences
+import android.os.ConditionVariable
 import android.util.Log
 import java.io.DataOutputStream
 import java.io.File
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 
-class OkSharedPreferencesImpl(val dir: String, val name: String) : OkSharedPreferences {
+class OkSharedPreferencesImpl(val lock: String, val dir: String, val name: String) : OkSharedPreferences {
 
 
     private val readWriteLock by lazy { ReentrantReadWriteLock() }
     private val readLock by lazy { readWriteLock.readLock() }
     private val writeLock by lazy { readWriteLock.writeLock() }
     private val cacheMap by lazy { mutableMapOf<String, Any>() }
+
+    val conditionVariable by lazy {
+        ConditionVariable()
+    }
+    var holdLock = false
+
 
     init {
         loadDataFromDisk()
@@ -36,13 +44,16 @@ class OkSharedPreferencesImpl(val dir: String, val name: String) : OkSharedPrefe
 
     fun clearData() {
         cacheMap.clear()
-        val okSpFile = File(dir, name + SUFFIX_OKSP)
-        okSpFile.deleteOnExit()
+        val randomAccessFile = RandomAccessFile(lock, "rw")
+        randomAccessFile.channel.lock().use {
+            val okSpFile = File(dir, name + SUFFIX_OKSP)
+            okSpFile.deleteOnExit()
+        }
     }
 
     fun loadDataFromDisk() {
         val okSpFile = File(dir, name + SUFFIX_OKSP)
-        Log.d(TAG, "okSpFile $okSpFile")
+        Log.d(TAG, "loadDataFromDisk okSpFile $okSpFile")
         if (!okSpFile.exists()) {
             okSpFile.createNewFile()
         }
@@ -51,43 +62,43 @@ class OkSharedPreferencesImpl(val dir: String, val name: String) : OkSharedPrefe
             val byteBuffer = ByteBuffer.wrap(byteArray)
             while (byteBuffer.position() < byteBuffer.limit()) {
                 val key = byteBuffer.getString()
-                Log.d(TAG, "loadDataFromDisk() key $key")
+//                Log.d(TAG, "loadDataFromDisk() key $key")
                 val type = byteBuffer.get().toUByte().toInt()
                 when (type) {
                     B -> {
                         val data = byteBuffer.get()
                         cacheMap.put(key, data.toInt() == 1)
-                        Log.d(TAG, "loadDataFromDisk() data ${data.toInt() == 1}")
+//                        Log.d(TAG, "loadDataFromDisk() data ${data.toInt() == 1}")
                     }
 
                     F -> {
                         val data = byteBuffer.getFloat()
                         cacheMap.put(key, data)
-                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        Log.d(TAG, "loadDataFromDisk() data $data")
                     }
 
                     I -> {
                         val data = byteBuffer.getInt()
                         cacheMap.put(key, data)
-                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        Log.d(TAG, "loadDataFromDisk() data $data")
                     }
 
                     L -> {
                         val data = byteBuffer.getLong()
                         cacheMap.put(key, data)
-                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        Log.d(TAG, "loadDataFromDisk() data $data")
                     }
 
                     S -> {
                         val data = byteBuffer.getString()
                         cacheMap.put(key, data)
-                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        Log.d(TAG, "loadDataFromDisk() data $data")
                     }
 
                     T -> {
                         val data = byteBuffer.getSet()
                         cacheMap.put(key, data)
-                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        Log.d(TAG, "loadDataFromDisk() data $data")
                     }
 
                     else -> {
@@ -103,61 +114,68 @@ class OkSharedPreferencesImpl(val dir: String, val name: String) : OkSharedPrefe
 
 
     fun saveDisk() {
-        val bakFile = File(dir, name + SUFFIX_BAK)
-        if (bakFile.exists()) {
-            bakFile.delete()
-        }
-        bakFile.createNewFile()
-        val outputStream = DataOutputStream(bakFile.outputStream().buffered())
-        outputStream.use {
-            for ((name, value) in cacheMap) {
-                Log.i(TAG, "saveDisk() name $name value $value")
-                when (value) {
-                    is Boolean -> {
-                        it.write(name.toDerLVByteArray())
-                        it.writeByte(B)
-                        it.writeByte(if (value) 1 else 0)
-                    }
+        Log.d(TAG, "saveDisk() called lock $lock")
+        val randomAccessFile = RandomAccessFile(lock, "rw")
+        randomAccessFile.channel.lock().use {
+            holdLock = true
+            val bakFile = File(dir, name + SUFFIX_BAK)
+            if (bakFile.exists()) {
+                bakFile.delete()
+            }
+            bakFile.createNewFile()
+            val outputStream = DataOutputStream(bakFile.outputStream().buffered())
+            outputStream.use {
+                for ((name, value) in cacheMap) {
+                    Log.i(TAG, "saveDisk() name $name value $value")
+                    when (value) {
+                        is Boolean -> {
+                            it.write(name.toDerLVByteArray())
+                            it.writeByte(B)
+                            it.writeByte(if (value) 1 else 0)
+                        }
 
-                    is Float -> {
-                        it.write(name.toDerLVByteArray())
-                        it.writeByte(F)
-                        it.writeFloat(value)
-                    }
+                        is Float -> {
+                            it.write(name.toDerLVByteArray())
+                            it.writeByte(F)
+                            it.writeFloat(value)
+                        }
 
-                    is Int -> {
-                        it.write(name.toDerLVByteArray())
-                        it.writeByte(I)
-                        it.writeInt(value)
-                    }
+                        is Int -> {
+                            it.write(name.toDerLVByteArray())
+                            it.writeByte(I)
+                            it.writeInt(value)
+                        }
 
-                    is Long -> {
-                        it.write(name.toDerLVByteArray())
-                        it.writeByte(L)
-                        it.writeLong(value)
-                    }
+                        is Long -> {
+                            it.write(name.toDerLVByteArray())
+                            it.writeByte(L)
+                            it.writeLong(value)
+                        }
 
-                    is String -> {
-                        it.write(name.toDerLVByteArray())
-                        it.writeByte(S)
-                        it.write(value.toDerLVByteArray())
-                    }
+                        is String -> {
+                            it.write(name.toDerLVByteArray())
+                            it.writeByte(S)
+                            it.write(value.toDerLVByteArray())
+                        }
 
-                    is Set<*> -> {
-                        it.write(name.toDerLVByteArray())
-                        it.writeByte(T)
-                        it.write((value as Set<String>).toDerLVByteArray())
+                        is Set<*> -> {
+                            it.write(name.toDerLVByteArray())
+                            it.writeByte(T)
+                            it.write((value as Set<String>).toDerLVByteArray())
+                        }
                     }
                 }
+                it.flush()
+                it.close()
+                val okSpFile = File(dir, name + SUFFIX_OKSP)
+                okSpFile.deleteOnExit()
+                bakFile.renameTo(okSpFile)
             }
-            it.flush()
-            it.close()
-            val okSpFile = File(dir, name + SUFFIX_OKSP)
-            okSpFile.deleteOnExit()
-            bakFile.renameTo(okSpFile)
+            conditionVariable.close()
+            conditionVariable.block()
+            Log.d(TAG, "saveDisk() holdLock $holdLock")
+            holdLock = false
         }
-
-
     }
 
     override fun getAll(): MutableMap<String, *> = cacheMap

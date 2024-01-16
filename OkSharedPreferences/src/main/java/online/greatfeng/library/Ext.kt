@@ -71,7 +71,7 @@ private const val TAG = "OkSharedPreferences"
 
 fun ByteBuffer.getString(): String {
     val len = getLen()
-    Log.d(TAG, "getString() len $len")
+//    Log.d(TAG, "getString() len $len")
     val byteArray = ByteArray(len)
     get(byteArray)
     return String(byteArray)
@@ -79,11 +79,11 @@ fun ByteBuffer.getString(): String {
 
 fun ByteBuffer.getSet(): Set<String> {
     val len = getLen()
-    Log.d(TAG, "getSet() len $len")
+//    Log.d(TAG, "getSet() len $len")
     val mutableSet = mutableSetOf<String>()
     for (i in 0 until len) {
         val str = getString()
-        Log.d(TAG, "getSet() str $str")
+//        Log.d(TAG, "getSet() str $str")
         mutableSet.add(str)
     }
     return mutableSet
