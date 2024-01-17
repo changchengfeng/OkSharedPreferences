@@ -10,7 +10,7 @@ const val MAX_LEN = 0x80000000
 
 fun String?.checkKey(): Boolean {
     if (this == null || length >= MAX_LEN) {
-        Log.e(TAG, "$this key or value can not be null and length must less $MAX_LEN")
+        Log.e(TAG, "$this key can not be null and length must less $MAX_LEN")
         return false
     }
     return true
@@ -18,15 +18,15 @@ fun String?.checkKey(): Boolean {
 
 fun String?.checkValue(): Boolean {
     if (this != null && length >= MAX_LEN) {
-        Log.e(TAG, "$this key or value can not be null and length must less $MAX_LEN")
+        Log.e(TAG, "$this value length must less $MAX_LEN")
         return false
     }
     return true
 }
 
-fun Set<String>?.checkValue(): Boolean {
+fun MutableSet<String>?.checkValue(): Boolean {
     if (this != null && this.any { it.length >= MAX_LEN }) {
-        Log.e(TAG, "$this key or value can not be null and length must less $MAX_LEN")
+        Log.e(TAG, "$this value length must less $MAX_LEN")
         return false
     }
     return true

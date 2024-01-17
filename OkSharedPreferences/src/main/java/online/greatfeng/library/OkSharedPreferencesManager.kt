@@ -1,6 +1,8 @@
 package online.greatfeng.library
 
 import android.content.Context
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.Process
 import android.util.Log
 import online.greatfeng.library.OkSharedPreferencesImpl.Companion.SUFFIX_OKSP
@@ -23,6 +25,13 @@ class OkSharedPreferencesManager private constructor(val context: Context) {
         }
     }
 
+    private val handlerThread by lazy {
+        HandlerThread("OkSharedPreferences").also {
+            it.start()
+        }
+    }
+
+
     private val dir by lazy {
         File(context.dataDir, "ok-sp").also {
             if (!it.exists()) {
@@ -42,12 +51,16 @@ class OkSharedPreferencesManager private constructor(val context: Context) {
     private val fileObserver by lazy {
         object : OkFileObserver(listOf(dir), ALL_EVENTS) {
             override fun onEvent(event: Int, path: String?) {
-                if (event and MOVED_TO != 0 && path != null && path.endsWith(SUFFIX_OKSP)) {
+                if ((event and MOVED_TO != 0 || event and DELETE != 0)
+                    && path != null
+                    && path.endsWith(SUFFIX_OKSP)
+                ) {
                     val name = path.substring(0, path.length - SUFFIX_OKSP.length)
                     if (cacheMap.containsKey(name)) {
                         val okSharedPreferences = getOkSharedPreferences(name)
                         Log.d(
-                            TAG, "${Process.myPid()} onEvent() called with:name = $name , holdLock = ${
+                            TAG,
+                            "${Process.myPid()} onEvent() called with:name = $name , holdLock = ${
                                 okSharedPreferences
                                     .holdLock
                             }"
@@ -71,7 +84,7 @@ class OkSharedPreferencesManager private constructor(val context: Context) {
     fun getOkSharedPreferences(name: String): OkSharedPreferencesImpl {
         return cacheMap[name] ?: OkSharedPreferencesImpl(
             lock.absolutePath,
-            dir.absolutePath, name
+            dir.absolutePath, name, Handler(handlerThread.looper)
         ).also {
             cacheMap[name] = it
         }
