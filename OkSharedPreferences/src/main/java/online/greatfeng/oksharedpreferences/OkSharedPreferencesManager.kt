@@ -1,16 +1,16 @@
-package online.greatfeng.library
+package online.greatfeng.oksharedpreferences
 
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Process
 import android.util.Log
-import online.greatfeng.library.OkSharedPreferencesImpl.Companion.SUFFIX_OKSP
-import online.greatfeng.library.fileobserver.OkFileObserver
+import online.greatfeng.oksharedpreferences.OkSharedPreferencesImpl.Companion.SUFFIX_OKSP
+import online.greatfeng.oksharedpreferences.fileobserver.OkFileObserver
 import java.io.File
 
 
-class OkSharedPreferencesManager private constructor(val context: Context) {
+internal class OkSharedPreferencesManager private constructor(val context: Context) {
 
     companion object {
         private const val TAG = "OkSharedPreferences"
@@ -57,7 +57,8 @@ class OkSharedPreferencesManager private constructor(val context: Context) {
                 ) {
                     val name = path.substring(0, path.length - SUFFIX_OKSP.length)
                     if (cacheMap.containsKey(name)) {
-                        val okSharedPreferences = getOkSharedPreferences(name)
+                        val okSharedPreferences =
+                            getOkSharedPreferences(name) as OkSharedPreferencesImpl
                         Log.d(
                             TAG,
                             "${Process.myPid()} onEvent() called with:name = $name , holdLock = ${
@@ -79,14 +80,24 @@ class OkSharedPreferencesManager private constructor(val context: Context) {
         fileObserver.startWatching()
     }
 
-    val cacheMap = mutableMapOf<String, OkSharedPreferencesImpl>()
+    val cacheMap = mutableMapOf<String, OkSharedPreferences>()
 
-    fun getOkSharedPreferences(name: String): OkSharedPreferencesImpl {
+    fun getOkSharedPreferences(name: String): OkSharedPreferences {
         return cacheMap[name] ?: OkSharedPreferencesImpl(
             lock.absolutePath,
             dir.absolutePath, name, Handler(handlerThread.looper)
         ).also {
             cacheMap[name] = it
+        }
+    }
+
+    fun deleteSharedPreferences(name: String): Boolean {
+        if (cacheMap.containsKey(name)) {
+            (cacheMap[name] as OkSharedPreferencesImpl?)?.clearData()
+            cacheMap.remove(name)
+            return true
+        } else {
+            return false
         }
     }
 }

@@ -1,4 +1,4 @@
-package online.greatfeng.library
+package online.greatfeng.oksharedpreferences
 
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
@@ -12,7 +12,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 
-class OkSharedPreferencesImpl(
+internal class OkSharedPreferencesImpl(
     val lock: String,
     val dir: String,
     val sharePreferencesName: String,

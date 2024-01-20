@@ -9,7 +9,6 @@ import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import android.util.Log
-import online.greatfeng.library.getOkSharedPreferences
 
 class SharedPreferenceService : Service() {
     var value = 100000
