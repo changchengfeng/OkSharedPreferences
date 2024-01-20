@@ -10,6 +10,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+//        maven {
+//            isAllowInsecureProtocol = true
+//            url = uri("http://greatfeng.online:9081/repository/maven-public/")
+//        }
     }
 }
 

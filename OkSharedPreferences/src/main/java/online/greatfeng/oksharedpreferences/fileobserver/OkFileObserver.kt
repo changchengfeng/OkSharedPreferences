@@ -1,4 +1,4 @@
-package online.greatfeng.library.fileobserver
+package online.greatfeng.oksharedpreferences.fileobserver
 
 
 import android.util.Log
@@ -9,7 +9,7 @@ import java.lang.ref.WeakReference
 import java.util.Arrays
 
 
-abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
+internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
 
     @IntDef(
         flag = true,

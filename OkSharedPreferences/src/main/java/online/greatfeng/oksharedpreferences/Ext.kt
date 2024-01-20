@@ -1,6 +1,5 @@
-package online.greatfeng.library
+package online.greatfeng.oksharedpreferences
 
-import android.content.Context
 import android.util.Log
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
@@ -8,7 +7,7 @@ import java.nio.ByteBuffer
 
 const val MAX_LEN = 0x80000000
 
-fun String?.checkKey(): Boolean {
+internal fun String?.checkKey(): Boolean {
     if (this == null || length >= MAX_LEN) {
         Log.e(TAG, "$this key can not be null and length must less $MAX_LEN")
         return false
@@ -16,7 +15,7 @@ fun String?.checkKey(): Boolean {
     return true
 }
 
-fun String?.checkValue(): Boolean {
+internal fun String?.checkValue(): Boolean {
     if (this != null && length >= MAX_LEN) {
         Log.e(TAG, "$this value length must less $MAX_LEN")
         return false
@@ -24,7 +23,7 @@ fun String?.checkValue(): Boolean {
     return true
 }
 
-fun MutableSet<String>?.checkValue(): Boolean {
+internal fun MutableSet<String>?.checkValue(): Boolean {
     if (this != null && this.any { it.length >= MAX_LEN }) {
         Log.e(TAG, "$this value length must less $MAX_LEN")
         return false
@@ -32,12 +31,7 @@ fun MutableSet<String>?.checkValue(): Boolean {
     return true
 }
 
-
-fun Context.getOkSharedPreferences(name: String): OkSharedPreferences {
-    return OkSharedPreferencesManager.getInstance(this).getOkSharedPreferences(name)
-}
-
-fun ByteBuffer.getLen(): Int {
+internal fun ByteBuffer.getLen(): Int {
     val size = get().toUByte().toInt()
     var len: Int
     when (size) {
@@ -69,7 +63,7 @@ fun ByteBuffer.getLen(): Int {
 
 private const val TAG = "OkSharedPreferences"
 
-fun ByteBuffer.getString(): String {
+internal fun ByteBuffer.getString(): String {
     val len = getLen()
 //    Log.d(TAG, "getString() len $len")
     val byteArray = ByteArray(len)
@@ -77,7 +71,7 @@ fun ByteBuffer.getString(): String {
     return String(byteArray)
 }
 
-fun ByteBuffer.getSet(): Set<String> {
+internal fun ByteBuffer.getSet(): Set<String> {
     val len = getLen()
 //    Log.d(TAG, "getSet() len $len")
     val mutableSet = mutableSetOf<String>()
@@ -89,7 +83,7 @@ fun ByteBuffer.getSet(): Set<String> {
     return mutableSet
 }
 
-fun String.toDerLVByteArray(): ByteArray {
+internal fun String.toDerLVByteArray(): ByteArray {
     val byteArray = this.toByteArray()
     val len = byteArray.size
     val derLVByteArray = len.toDerLVByteArray()
@@ -98,7 +92,7 @@ fun String.toDerLVByteArray(): ByteArray {
         .array()
 }
 
-fun Set<String>.toDerLVByteArray(): ByteArray {
+internal fun Set<String>.toDerLVByteArray(): ByteArray {
     val byteArrayOutputStream = ByteArrayOutputStream()
     val dataOutputStream = DataOutputStream(byteArrayOutputStream)
     dataOutputStream.write(size.toDerLVByteArray())
@@ -108,7 +102,7 @@ fun Set<String>.toDerLVByteArray(): ByteArray {
     return byteArrayOutputStream.toByteArray()
 }
 
-fun Int.toDerLVByteArray(): ByteArray {
+internal fun Int.toDerLVByteArray(): ByteArray {
     if (this < 0x80) {
         return ByteBuffer.allocate(1).put(this.toByte()).array()
     }
