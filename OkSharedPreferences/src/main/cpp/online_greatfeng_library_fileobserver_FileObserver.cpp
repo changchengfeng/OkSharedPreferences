@@ -8,13 +8,13 @@
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_init(JNIEnv *env,
+Java_online_greatfeng_oksharedpreferences_fileobserver_OkFileObserver_00024ObserverThread_init(JNIEnv *env,
                                                                                    jobject thiz) {
     return (jint) inotify_init1(IN_CLOEXEC);
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_observe(JNIEnv *env,
+Java_online_greatfeng_oksharedpreferences_fileobserver_OkFileObserver_00024ObserverThread_observe(JNIEnv *env,
                                                                                       jobject thiz,
                                                                                       jint fd) {
 
@@ -60,7 +60,7 @@ Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_ob
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_startWatching(
+Java_online_greatfeng_oksharedpreferences_fileobserver_OkFileObserver_00024ObserverThread_startWatching(
         JNIEnv *env, jobject thiz, jint fd, jobjectArray paths, jint mask, jintArray wfds) {
     LOGD("ObserverThread_startWatching fd = %d",fd);
     if (fd >= 0) {
@@ -82,7 +82,7 @@ Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_st
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_online_greatfeng_library_fileobserver_OkFileObserver_00024ObserverThread_stopWatching(
+Java_online_greatfeng_oksharedpreferences_fileobserver_OkFileObserver_00024ObserverThread_stopWatching(
         JNIEnv *env, jobject thiz, jint fd, jintArray wfds) {
     size_t count = env->GetArrayLength(wfds);
     jboolean isCopy;

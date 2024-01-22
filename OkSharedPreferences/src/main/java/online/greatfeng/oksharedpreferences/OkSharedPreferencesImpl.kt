@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.os.ConditionVariable
 import android.os.Handler
-import android.util.Log
 import java.io.DataOutputStream
 import java.io.File
 import java.io.RandomAccessFile
@@ -13,7 +12,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 
 internal class OkSharedPreferencesImpl(
-    val lock: String,
+    val fileLock: String,
     val dir: String,
     val sharePreferencesName: String,
     val handler: Handler
@@ -25,6 +24,7 @@ internal class OkSharedPreferencesImpl(
     private val readLock by lazy { readWriteLock.readLock() }
     private val writeLock by lazy { readWriteLock.writeLock() }
     private val cacheMap by lazy { mutableMapOf<String, Any>() }
+    private val lock = Any()
 
     private val listeners by lazy {
         mutableSetOf<OnSharedPreferenceChangeListener>()
@@ -32,6 +32,7 @@ internal class OkSharedPreferencesImpl(
     val conditionVariable by lazy {
         ConditionVariable()
     }
+
     @Volatile
     var holdLock = false
 
@@ -63,17 +64,17 @@ internal class OkSharedPreferencesImpl(
                 it.onSharedPreferenceChanged(this, key)
             }
         }
-        val randomAccessFile = RandomAccessFile(lock, "rw")
+        val randomAccessFile = RandomAccessFile(fileLock, "rw")
         randomAccessFile.channel.lock().use {
             holdLock = true
             val okSpFile = File(dir, sharePreferencesName + SUFFIX_OKSP)
-            if (okSpFile.exists()){
+            if (okSpFile.exists()) {
                 okSpFile.delete()
             }
 
             conditionVariable.close()
             conditionVariable.block()
-            Log.d(TAG, "saveDisk() holdLock $holdLock")
+            LogUtils.d(TAG, "saveDisk() holdLock $holdLock")
             holdLock = false
         }
     }
@@ -83,7 +84,7 @@ internal class OkSharedPreferencesImpl(
         try {
             cacheMap.clear()
             val okSpFile = File(dir, sharePreferencesName + SUFFIX_OKSP)
-            Log.d(TAG, "loadDataFromDisk okSpFile $okSpFile")
+            LogUtils.d(TAG, "loadDataFromDisk okSpFile $okSpFile")
             if (!okSpFile.exists()) {
                 okSpFile.createNewFile()
             }
@@ -92,43 +93,43 @@ internal class OkSharedPreferencesImpl(
                 val byteBuffer = ByteBuffer.wrap(byteArray)
                 while (byteBuffer.position() < byteBuffer.limit()) {
                     val key = byteBuffer.getString()
-//                Log.d(TAG, "loadDataFromDisk() key $key")
+//                LogUtils.d(TAG, "loadDataFromDisk() key $key")
                     val type = byteBuffer.get().toUByte().toInt()
                     when (type) {
                         B -> {
                             val data = byteBuffer.get()
                             cacheMap.put(key, data.toInt() == 1)
-//                        Log.d(TAG, "loadDataFromDisk() data ${data.toInt() == 1}")
+//                        LogUtils.d(TAG, "loadDataFromDisk() data ${data.toInt() == 1}")
                         }
 
                         F -> {
                             val data = byteBuffer.getFloat()
                             cacheMap.put(key, data)
-//                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
                         }
 
                         I -> {
                             val data = byteBuffer.getInt()
                             cacheMap.put(key, data)
-//                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
                         }
 
                         L -> {
                             val data = byteBuffer.getLong()
                             cacheMap.put(key, data)
-//                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
                         }
 
                         S -> {
                             val data = byteBuffer.getString()
                             cacheMap.put(key, data)
-//                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
                         }
 
                         T -> {
                             val data = byteBuffer.getSet()
                             cacheMap.put(key, data)
-//                        Log.d(TAG, "loadDataFromDisk() data $data")
+//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
                         }
 
                         else -> {
@@ -140,7 +141,7 @@ internal class OkSharedPreferencesImpl(
                     }
                 }
             }
-        }finally {
+        } finally {
             writeLock.unlock()
         }
 
@@ -148,8 +149,8 @@ internal class OkSharedPreferencesImpl(
 
 
     fun saveDisk() {
-        Log.d(TAG, "saveDisk() called lock $lock")
-        val randomAccessFile = RandomAccessFile(lock, "rw")
+        LogUtils.d(TAG, "saveDisk() called lock $fileLock")
+        val randomAccessFile = RandomAccessFile(fileLock, "rw")
         randomAccessFile.channel.lock().use {
             holdLock = true
             val bakFile = File(dir, sharePreferencesName + SUFFIX_BAK)
@@ -160,7 +161,7 @@ internal class OkSharedPreferencesImpl(
             val outputStream = DataOutputStream(bakFile.outputStream().buffered())
             outputStream.use {
                 for ((key, value) in cacheMap) {
-                    Log.i(TAG, "saveDisk() key $key value $value")
+                    LogUtils.i(TAG, "saveDisk() key $key value $value")
                     when (value) {
                         is Boolean -> {
                             it.write(key.toDerLVByteArray())
@@ -203,14 +204,14 @@ internal class OkSharedPreferencesImpl(
                 it.close()
                 val okSpFile = File(dir, sharePreferencesName + SUFFIX_OKSP)
                 okSpFile.deleteOnExit()
-                if (okSpFile.exists()){
+                if (okSpFile.exists()) {
                     okSpFile.delete()
                 }
                 bakFile.renameTo(okSpFile)
             }
             conditionVariable.close()
             conditionVariable.block()
-            Log.d(TAG, "saveDisk() holdLock $holdLock")
+            LogUtils.d(TAG, "saveDisk() holdLock $holdLock")
             holdLock = false
         }
     }
@@ -224,8 +225,10 @@ internal class OkSharedPreferencesImpl(
             readLock.lock()
             try {
                 val value = cacheMap.get(key)
-                if (value == null || value !is String) {
-                    Log.e(TAG, "getString = $value maybe not String type")
+                if (value == null) {
+                    defValue
+                } else if (value !is String) {
+                    LogUtils.e(TAG, "getString = $value maybe not String type")
                     defValue
                 } else {
                     value
@@ -242,8 +245,10 @@ internal class OkSharedPreferencesImpl(
             readLock.lock()
             try {
                 val value = cacheMap.get(key)
-                if (value == null || value !is MutableSet<*>) {
-                    Log.e(TAG, "getStringSet = $value maybe not MutableSet<String>? type")
+                if (value == null) {
+                    defValues
+                } else if (value !is MutableSet<*>) {
+                    LogUtils.e(TAG, "getStringSet = $value maybe not MutableSet<String>? type")
                     defValues
                 } else {
                     value as MutableSet<String>?
@@ -261,8 +266,10 @@ internal class OkSharedPreferencesImpl(
             readLock.lock()
             try {
                 val value = cacheMap.get(key)
-                if (value == null || value !is Int) {
-                    Log.e(TAG, "getInt = $value maybe not Int type")
+                if (value == null) {
+                    defValue
+                } else if (value !is Int) {
+                    LogUtils.e(TAG, "getInt = $value maybe not Int type")
                     defValue
                 } else {
                     value
@@ -280,8 +287,10 @@ internal class OkSharedPreferencesImpl(
             readLock.lock()
             try {
                 val value = cacheMap.get(key)
-                if (value == null || value !is Long) {
-                    Log.e(TAG, "getLong = $value maybe not Long type")
+                if (value == null) {
+                    defValue
+                } else if (value !is Long) {
+                    LogUtils.e(TAG, "getLong = $value maybe not Long type")
                     defValue
                 } else {
                     value
@@ -299,8 +308,10 @@ internal class OkSharedPreferencesImpl(
             readLock.lock()
             try {
                 val value = cacheMap.get(key)
-                if (value == null || value !is Float) {
-                    Log.e(TAG, "getFloat = $value maybe not Float type")
+                if (value == null) {
+                    defValue
+                } else if (value !is Float) {
+                    LogUtils.e(TAG, "getFloat = $value maybe not Float type")
                     defValue
                 } else {
                     value
@@ -318,8 +329,10 @@ internal class OkSharedPreferencesImpl(
             readLock.lock()
             try {
                 val value = cacheMap.get(key)
-                if (value == null || value !is Boolean) {
-                    Log.e(TAG, "getBoolean = $value maybe not Boolean type")
+                if (value == null) {
+                    defValue
+                } else if (value !is Boolean) {
+                    LogUtils.e(TAG, "getBoolean = $value maybe not Boolean type")
                     defValue
                 } else {
                     value
@@ -347,11 +360,14 @@ internal class OkSharedPreferencesImpl(
         return OkEditor()
     }
 
+
     override fun registerOnSharedPreferenceChangeListener(listener: OnSharedPreferenceChangeListener?) {
         if (listener == null) {
             throw NullPointerException("can not registerOnSharedPreferenceChangeListener with null")
         }
-        listeners.add(listener)
+        synchronized(lock) {
+            listeners.add(listener)
+        }
 
     }
 
@@ -359,7 +375,9 @@ internal class OkSharedPreferencesImpl(
         if (listener == null) {
             throw NullPointerException("can not registerOnSharedPreferenceChangeListener with null")
         }
-        listeners.add(listener)
+        synchronized(lock) {
+            listeners.remove(listener)
+        }
     }
 
     override fun clearOnSharedPreferenceChangeListener() {
@@ -370,7 +388,7 @@ internal class OkSharedPreferencesImpl(
         for ((key, value) in modifiedMap) {
             if (value == this) {
                 if (cacheMap.containsKey(key)) {
-                    Log.d(TAG, "handleModifiedMap() called with: key = $key value = $value")
+                    LogUtils.d(TAG, "handleModifiedMap() called with: key = $key value = $value")
                     cacheMap.remove(key)
                     for (it in listeners) {
                         it.onSharedPreferenceChanged(this, key)
@@ -380,7 +398,7 @@ internal class OkSharedPreferencesImpl(
             } else {
                 val cacheValue = cacheMap.get(key)
                 if (cacheValue == null || !cacheValue.equals(value)) {
-                    Log.d(TAG, "handleModifiedMap() called with: key = $key value = $value")
+                    LogUtils.d(TAG, "handleModifiedMap() called with: key = $key value = $value")
                     cacheMap.put(key, value)
                     for (it in listeners) {
                         it.onSharedPreferenceChanged(this, key)

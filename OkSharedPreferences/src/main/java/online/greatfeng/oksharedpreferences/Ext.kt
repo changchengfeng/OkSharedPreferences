@@ -1,6 +1,5 @@
 package online.greatfeng.oksharedpreferences
 
-import android.util.Log
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.nio.ByteBuffer
@@ -9,7 +8,7 @@ const val MAX_LEN = 0x80000000
 
 internal fun String?.checkKey(): Boolean {
     if (this == null || length >= MAX_LEN) {
-        Log.e(TAG, "$this key can not be null and length must less $MAX_LEN")
+        LogUtils.e(TAG, "$this key can not be null and length must less $MAX_LEN")
         return false
     }
     return true
@@ -17,7 +16,7 @@ internal fun String?.checkKey(): Boolean {
 
 internal fun String?.checkValue(): Boolean {
     if (this != null && length >= MAX_LEN) {
-        Log.e(TAG, "$this value length must less $MAX_LEN")
+        LogUtils.e(TAG, "$this value length must less $MAX_LEN")
         return false
     }
     return true
@@ -25,7 +24,7 @@ internal fun String?.checkValue(): Boolean {
 
 internal fun MutableSet<String>?.checkValue(): Boolean {
     if (this != null && this.any { it.length >= MAX_LEN }) {
-        Log.e(TAG, "$this value length must less $MAX_LEN")
+        LogUtils.e(TAG, "$this value length must less $MAX_LEN")
         return false
     }
     return true
@@ -65,7 +64,7 @@ private const val TAG = "OkSharedPreferences"
 
 internal fun ByteBuffer.getString(): String {
     val len = getLen()
-//    Log.d(TAG, "getString() len $len")
+//    LogUtils.d(TAG, "getString() len $len")
     val byteArray = ByteArray(len)
     get(byteArray)
     return String(byteArray)
@@ -73,11 +72,11 @@ internal fun ByteBuffer.getString(): String {
 
 internal fun ByteBuffer.getSet(): Set<String> {
     val len = getLen()
-//    Log.d(TAG, "getSet() len $len")
+//    LogUtils.d(TAG, "getSet() len $len")
     val mutableSet = mutableSetOf<String>()
     for (i in 0 until len) {
         val str = getString()
-//        Log.d(TAG, "getSet() str $str")
+//        LogUtils.d(TAG, "getSet() str $str")
         mutableSet.add(str)
     }
     return mutableSet
