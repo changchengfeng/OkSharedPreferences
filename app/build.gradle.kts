@@ -59,7 +59,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("top.greatfeng:oksharedpreferences:1.0.1")
+    implementation("top.greatfeng:oksharedpreferences:1.0.2")
 //    implementation(project(":OkSharedPreferences"))
 
     testImplementation("junit:junit:4.13.2")

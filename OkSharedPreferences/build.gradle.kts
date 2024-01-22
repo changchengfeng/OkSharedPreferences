@@ -56,7 +56,7 @@ publishing {
         create<MavenPublication>("mavenAar") {
             groupId = "top.greatfeng"
             artifactId = "oksharedpreferences"
-            version = "1.0.0"
+            version = "1.0.2"
 //            artifact("$buildDir/outputs/aar/OkSharedPreferences-release.aar")
             // 发布 AAR 文件
             signing {
