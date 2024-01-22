@@ -17,7 +17,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
     jclass clz = env->FindClass(
-            "online/greatfeng/library/fileobserver/OkFileObserver$ObserverThread");
+            "online/greatfeng/oksharedpreferences/fileobserver/OkFileObserver$ObserverThread");
     method_onEvent = env->GetMethodID(clz, "onEvent", "(IILjava/lang/String;)V");
     LOGD("JNI_OnLoad clz = %d", clz);
     LOGD("JNI_OnLoad method_onEvent = %d", method_onEvent);

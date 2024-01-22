@@ -1,9 +1,9 @@
 package online.greatfeng.oksharedpreferences.fileobserver
 
 
-import android.util.Log
 import android.util.SparseArray
 import androidx.annotation.IntDef
+import online.greatfeng.oksharedpreferences.LogUtils
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.Arrays
@@ -95,7 +95,7 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
         val s_observerThread = ObserverThread()
 
         init {
-            Log.d(TAG, "s_observerThread.start() called")
+            LogUtils.d(TAG, "s_observerThread.start() called")
             s_observerThread.start()
         }
     }
@@ -109,11 +109,11 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
         init {
             System.loadLibrary("OkSharedPreferences")
             m_fd = init()
-            Log.d(TAG, "init called m_fd $m_fd")
+            LogUtils.d(TAG, "init called m_fd $m_fd")
         }
 
         override fun run() {
-            Log.d(TAG, "run() m_fd $m_fd")
+            LogUtils.d(TAG, "run() m_fd $m_fd")
             observe(m_fd)
         }
 
@@ -121,7 +121,7 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
             files: List<File>,
             @NotifyEventType mask: Int, observer: OkFileObserver
         ): IntArray {
-            Log.d(
+            LogUtils.d(
                 TAG,
                 "startWatching() called with: files = $files, mask = $mask, observer = $observer"
             )
@@ -130,7 +130,7 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
             for (i in 0 until count) {
                 paths[i] = files[i].absolutePath
             }
-            Log.d(TAG, "startWatching: ${Arrays.toString(paths)}")
+            LogUtils.d(TAG, "startWatching: ${Arrays.toString(paths)}")
             val wfds = IntArray(count)
             Arrays.fill(wfds, -1)
             startWatching(m_fd, paths, mask, wfds)
@@ -142,12 +142,12 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
                     }
                 }
             }
-            Log.d(TAG, "startWatching wfds : ${Arrays.toString(wfds)}")
+            LogUtils.d(TAG, "startWatching wfds : ${Arrays.toString(wfds)}")
             return wfds
         }
 
         fun stopWatching(descriptors: IntArray?) {
-            Log.d(TAG, "stopWatching() m_fd $m_fd , descriptors = $descriptors")
+            LogUtils.d(TAG, "stopWatching() m_fd $m_fd , descriptors = $descriptors")
             stopWatching(m_fd, descriptors)
         }
 
@@ -168,7 +168,7 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
             try {
                 observer?.onEvent(mask, path)
             } catch (throwable: Throwable) {
-                Log.wtf(
+                LogUtils.wtf(
                     TAG,
                     "Unhandled exception in FileObserver $observer", throwable
                 )

@@ -59,7 +59,7 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
                     if (cacheMap.containsKey(name)) {
                         val okSharedPreferences =
                             getOkSharedPreferences(name) as OkSharedPreferencesImpl
-                        Log.d(
+                        LogUtils.d(
                             TAG,
                             "${Process.myPid()} onEvent() called with:name = $name , holdLock = ${
                                 okSharedPreferences
