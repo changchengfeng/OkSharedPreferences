@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Process
-import android.util.Log
 import online.greatfeng.oksharedpreferences.OkSharedPreferencesImpl.Companion.SUFFIX_OKSP
 import online.greatfeng.oksharedpreferences.fileobserver.OkFileObserver
 import java.io.File
@@ -13,7 +12,7 @@ import java.io.File
 internal class OkSharedPreferencesManager private constructor(val context: Context) {
 
     companion object {
-        private const val TAG = "OkSharedPreferences"
+        private const val TAG = "OkSharedPreferencesManager"
 
         @Volatile
         private var instantiation: OkSharedPreferencesManager? = null
@@ -48,10 +47,15 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
         }
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private val fileObserver by lazy {
         object : OkFileObserver(listOf(dir), ALL_EVENTS) {
             override fun onEvent(event: Int, path: String?) {
-                if ((event and MOVED_TO != 0 || event and DELETE != 0)
+                LogUtils.d(
+                    TAG,
+                    "onEvent() called with: event = ${event.toHexString()}, path = $path"
+                )
+                if (event and DELETE != 0
                     && path != null
                     && path.endsWith(SUFFIX_OKSP)
                 ) {

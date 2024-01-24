@@ -82,9 +82,11 @@ internal class OkSharedPreferencesImpl(
     fun loadDataFromDisk() {
         writeLock.lock()
         try {
+            val tempMap = mutableMapOf<String, Any>()
+            tempMap.putAll(cacheMap)
             cacheMap.clear()
             val okSpFile = File(dir, sharePreferencesName + SUFFIX_OKSP)
-            LogUtils.d(TAG, "loadDataFromDisk okSpFile $okSpFile")
+            LogUtils.d(TAG, "loadDataFromDisk okSpFile $okSpFile ${hashCode()}")
             if (!okSpFile.exists()) {
                 okSpFile.createNewFile()
             }
@@ -93,43 +95,76 @@ internal class OkSharedPreferencesImpl(
                 val byteBuffer = ByteBuffer.wrap(byteArray)
                 while (byteBuffer.position() < byteBuffer.limit()) {
                     val key = byteBuffer.getString()
-//                LogUtils.d(TAG, "loadDataFromDisk() key $key")
+                    LogUtils.d(
+                        TAG,
+                        "loadDataFromDisk() key $key tempMap.get(key) ${tempMap.get(key)}"
+                    )
                     val type = byteBuffer.get().toUByte().toInt()
                     when (type) {
                         B -> {
                             val data = byteBuffer.get()
                             cacheMap.put(key, data.toInt() == 1)
-//                        LogUtils.d(TAG, "loadDataFromDisk() data ${data.toInt() == 1}")
+                            LogUtils.d(TAG, "loadDataFromDisk() data ${data.toInt() == 1}")
+                            if ((data.toInt() == 1) != tempMap.get(key)) {
+                                for (it in listeners) {
+                                    it.onSharedPreferenceChanged(this, key)
+                                }
+                            }
                         }
 
                         F -> {
                             val data = byteBuffer.getFloat()
                             cacheMap.put(key, data)
-//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            if (data != tempMap.get(key)) {
+                                for (it in listeners) {
+                                    it.onSharedPreferenceChanged(this, key)
+                                }
+                            }
                         }
 
                         I -> {
                             val data = byteBuffer.getInt()
                             cacheMap.put(key, data)
-//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            if (data != tempMap.get(key)) {
+                                for (it in listeners) {
+                                    it.onSharedPreferenceChanged(this, key)
+                                }
+                            }
                         }
 
                         L -> {
                             val data = byteBuffer.getLong()
                             cacheMap.put(key, data)
-//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            if (data != tempMap.get(key)) {
+                                for (it in listeners) {
+                                    it.onSharedPreferenceChanged(this, key)
+                                }
+                            }
                         }
 
                         S -> {
                             val data = byteBuffer.getString()
                             cacheMap.put(key, data)
-//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            if (!data.equals(tempMap.get(key))) {
+                                for (it in listeners) {
+                                    it.onSharedPreferenceChanged(this, key)
+                                }
+                            }
                         }
 
                         T -> {
                             val data = byteBuffer.getSet()
                             cacheMap.put(key, data)
-//                        LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            LogUtils.d(TAG, "loadDataFromDisk() data $data")
+                            if (!data.equals(tempMap.get(key))) {
+                                for (it in listeners) {
+                                    it.onSharedPreferenceChanged(this, key)
+                                }
+                            }
                         }
 
                         else -> {
@@ -138,6 +173,12 @@ internal class OkSharedPreferencesImpl(
                                         "please check OkSharedPreferences file ${okSpFile.absolutePath}"
                             )
                         }
+                    }
+                }
+            } else {
+                for (it in listeners) {
+                    for (key in tempMap.keys) {
+                        it.onSharedPreferenceChanged(this, key)
                     }
                 }
             }

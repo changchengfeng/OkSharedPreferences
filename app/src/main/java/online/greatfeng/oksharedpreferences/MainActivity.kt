@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
                         key?.let {
                             when (it) {
                                 KEY_TEST_BOOLEAN -> {
-                                    Log.d(
+                                    Log.i(
                                         TAG,
                                         "onSharedPreferenceChanged() called with: sharedPreferences = ${
                                             sharedPreferences.getBoolean(
@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 KEY_TEST_FLOAT -> {
-                                    Log.d(
+                                    Log.i(
                                         TAG,
                                         "onSharedPreferenceChanged() called with: sharedPreferences = ${
                                             sharedPreferences.getFloat(
@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 KEY_TEST_INT -> {
-                                    Log.d(
+                                    Log.i(
                                         TAG,
                                         "onSharedPreferenceChanged() called with: sharedPreferences = ${
                                             sharedPreferences.getInt(
@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 KEY_TEST_XXX -> {
-                                    Log.d(
+                                    Log.i(
                                         TAG,
                                         "onSharedPreferenceChanged() called with: sharedPreferences = ${
                                             sharedPreferences.getInt(
@@ -120,7 +120,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 KEY_TEST_LONG -> {
-                                    Log.d(
+                                    Log.i(
                                         TAG,
                                         "onSharedPreferenceChanged() called with: sharedPreferences = ${
                                             sharedPreferences.getLong(
@@ -132,7 +132,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 KEY_TEST_STRING -> {
-                                    Log.d(
+                                    Log.i(
                                         TAG,
                                         "onSharedPreferenceChanged() called with: sharedPreferences = ${
                                             sharedPreferences.getString(
@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 KEY_TEST_SET -> {
-                                    Log.d(
+                                    Log.i(
                                         TAG,
                                         "onSharedPreferenceChanged() called with: sharedPreferences = ${
                                             sharedPreferences.getStringSet(
