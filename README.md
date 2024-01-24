@@ -18,5 +18,7 @@ final OkSharedPreferences preferences = OkSharedPreferencesKt.getOkSharedPrefere
 
 The release is available on Maven Central.
 ```
-implementation("top.greatfeng:oksharedpreferences:1.0.2")
+    implementation("top.greatfeng:oksharedpreferences:1.0.2") {
+        transitive = false
+    }
 ```
