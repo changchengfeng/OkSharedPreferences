@@ -45,7 +45,6 @@ android {
     }
 }
 dependencies {
-    implementation("androidx.annotation:annotation-jvm:1.7.1")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
 }
@@ -54,18 +53,18 @@ publishing {
     publications {
 
         create<MavenPublication>("mavenAar") {
-            groupId = "top.greatfeng"
+            groupId = "online.greatfeng"
             artifactId = "oksharedpreferences"
-            version = "1.0.2"
-//            artifact("$buildDir/outputs/aar/OkSharedPreferences-release.aar")
+            version = "1.0.0"
+            artifact("$buildDir/outputs/aar/OkSharedPreferences-release.aar")
             // 发布 AAR 文件
             signing {
                 sign(publishing.publications["mavenAar"])
 
             }
-            afterEvaluate {
-                from(components["release"])
-            }
+//            afterEvaluate {
+//                from(components["release"])
+//            }
 
             // 配置 POM 文件
             pom {
@@ -105,18 +104,18 @@ publishing {
 
 
     repositories {
-//        maven {
-//            url = uri("$buildDir/repo")
-//        }
         maven {
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                username = findProperty("ossrhUsername") as String
-                password = findProperty("ossrhPassword") as String
-//                username = findProperty("username") as String
-//                password = findProperty("password") as String
-            }
+            url = uri("$buildDir/repo")
         }
+//        maven {
+//            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+//            credentials {
+//                username = findProperty("ossrhUsername") as String
+//                password = findProperty("ossrhPassword") as String
+////                username = findProperty("username") as String
+////                password = findProperty("password") as String
+//            }
+    }
 
 
 //        maven {
@@ -127,7 +126,5 @@ publishing {
 //                password = findProperty("localPassword") as String
 //            }
 //        }
-    }
-
-
 }
+

@@ -2,7 +2,6 @@ package online.greatfeng.oksharedpreferences.fileobserver
 
 
 import android.util.SparseArray
-import androidx.annotation.IntDef
 import online.greatfeng.oksharedpreferences.LogUtils
 import java.io.File
 import java.lang.ref.WeakReference
@@ -10,15 +9,6 @@ import java.util.Arrays
 
 
 internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
-
-    @IntDef(
-        flag = true,
-        value = [ACCESS, MODIFY, ATTRIB, CLOSE_WRITE, CLOSE_NOWRITE, OPEN, MOVED_FROM, MOVED_TO, CREATE, DELETE, DELETE_SELF, MOVE_SELF]
-    )
-    @Retention(
-        AnnotationRetention.SOURCE
-    )
-    annotation class NotifyEventType
 
 
     private var mDescriptors: IntArray? = null
@@ -86,7 +76,6 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
         /** Event type: The monitored file or directory was moved; monitoring continues  */
         const val MOVE_SELF = 0x00000800
 
-        @NotifyEventType
         const val ALL_EVENTS = (ACCESS or MODIFY or ATTRIB or CLOSE_WRITE
                 or CLOSE_NOWRITE or OPEN or MOVED_FROM or MOVED_TO or DELETE or CREATE
                 or DELETE_SELF or MOVE_SELF)
@@ -117,10 +106,7 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
             observe(m_fd)
         }
 
-        fun startWatching(
-            files: List<File>,
-            @NotifyEventType mask: Int, observer: OkFileObserver
-        ): IntArray {
+        fun startWatching(files: List<File>, mask: Int, observer: OkFileObserver): IntArray {
             LogUtils.d(
                 TAG,
                 "startWatching() called with: files = $files, mask = $mask, observer = $observer"
@@ -151,7 +137,7 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
             stopWatching(m_fd, descriptors)
         }
 
-        fun onEvent(wfd: Int, @NotifyEventType mask: Int, path: String?) {
+        fun onEvent(wfd: Int, mask: Int, path: String?) {
             // look up our observer, fixing up the map if necessary...
             var observer: OkFileObserver? = null
             synchronized(mRealObservers) {
@@ -178,8 +164,10 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
         private external fun init(): Int
         private external fun observe(fd: Int)
         private external fun startWatching(
-            fd: Int, paths: Array<String?>,
-            @NotifyEventType mask: Int, wfds: IntArray
+            fd: Int,
+            paths: Array<String?>,
+            mask: Int,
+            wfds: IntArray
         )
 
         private external fun stopWatching(fd: Int, wfds: IntArray?)
