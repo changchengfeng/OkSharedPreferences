@@ -47,13 +47,12 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
         }
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
     private val fileObserver by lazy {
         object : OkFileObserver(listOf(dir), ALL_EVENTS) {
             override fun onEvent(event: Int, path: String?) {
                 LogUtils.d(
                     TAG,
-                    "onEvent() called with: event = ${event.toHexString()}, path = $path"
+                    "onEvent() called with: event = ${event}, path = $path"
                 )
                 if (event and DELETE != 0
                     && path != null
