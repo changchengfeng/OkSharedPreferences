@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        val testSharedPreferences =
+            getSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME, MODE_PRIVATE)
+        testSharedPreferences.edit().putInt(KEY_TEST_XXX, 9876).commit()
 
         bindService(
             Intent(applicationContext, SharedPreferenceService::class.java),

@@ -57,12 +57,12 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
                     val name = path.substring(0, path.length - SUFFIX_OKSP.length)
                     if (cacheMap.containsKey(name)) {
                         val okSharedPreferences =
-                            getOkSharedPreferences(name) as OkSharedPreferencesImpl
+                            getOkSharedPreferences(name, false) as OkSharedPreferencesImpl
                         LogUtils.d(
                             TAG,
                             "${Process.myPid()} onEvent() called with:name = $name "
                         )
-                        okSharedPreferences.loadDataFromDisk()
+                        okSharedPreferences.loadDataFromDisk(null)
                     }
                 }
             }
@@ -75,8 +75,12 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
 
     val cacheMap = mutableMapOf<String, OkSharedPreferences>()
 
-    fun getOkSharedPreferences(name: String): OkSharedPreferences {
+    fun getOkSharedPreferences(name: String, migration: Boolean): OkSharedPreferences {
         return cacheMap[name] ?: OkSharedPreferencesImpl(
+            if (migration) context.getSharedPreferences(
+                name,
+                Context.MODE_PRIVATE
+            ) else null,
             lock.absolutePath,
             dir.absolutePath, name, Handler(handlerThread.looper)
         ).also {
@@ -86,7 +90,7 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
 
     fun deleteSharedPreferences(name: String): Boolean {
         if (cacheMap.containsKey(name)) {
-            (cacheMap[name] as OkSharedPreferencesImpl?)?.clearData()
+            (cacheMap[name] as OkSharedPreferencesImpl?)?.clearData(true)
             cacheMap.remove(name)
             return true
         } else {
