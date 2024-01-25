@@ -8,7 +8,11 @@ interface OkSharedPreferences : SharedPreferences {
 }
 
 fun Context.getOkSharedPreferences(name: String): OkSharedPreferences {
-    return OkSharedPreferencesManager.getInstance(this).getOkSharedPreferences(name)
+    return getOkSharedPreferences(name, false)
+}
+
+fun Context.getOkSharedPreferences(name: String, migration: Boolean): OkSharedPreferences {
+    return OkSharedPreferencesManager.getInstance(this).getOkSharedPreferences(name, migration)
 }
 
 fun Context.deleteSharedPreferences(name: String): Boolean {
