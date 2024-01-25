@@ -2,7 +2,6 @@ package online.greatfeng.oksharedpreferences
 
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
-import android.os.ConditionVariable
 import android.os.Handler
 import java.io.DataOutputStream
 import java.io.File
@@ -19,7 +18,6 @@ internal class OkSharedPreferencesImpl(
 ) :
     OkSharedPreferences {
 
-
     private val readWriteLock by lazy { ReentrantReadWriteLock() }
     private val readLock by lazy { readWriteLock.readLock() }
     private val writeLock by lazy { readWriteLock.writeLock() }
@@ -29,13 +27,6 @@ internal class OkSharedPreferencesImpl(
     private val listeners by lazy {
         mutableSetOf<OnSharedPreferenceChangeListener>()
     }
-    val conditionVariable by lazy {
-        ConditionVariable()
-    }
-
-    @Volatile
-    var holdLock = false
-
 
     init {
         loadDataFromDisk()
@@ -66,16 +57,10 @@ internal class OkSharedPreferencesImpl(
         }
         val randomAccessFile = RandomAccessFile(fileLock, "rw")
         randomAccessFile.channel.lock().use {
-            holdLock = true
             val okSpFile = File(dir, sharePreferencesName + SUFFIX_OKSP)
             if (okSpFile.exists()) {
                 okSpFile.delete()
             }
-
-            conditionVariable.close()
-            conditionVariable.block()
-            LogUtils.d(TAG, "saveDisk() holdLock $holdLock")
-            holdLock = false
         }
     }
 
@@ -193,7 +178,6 @@ internal class OkSharedPreferencesImpl(
         LogUtils.d(TAG, "saveDisk() called lock $fileLock")
         val randomAccessFile = RandomAccessFile(fileLock, "rw")
         randomAccessFile.channel.lock().use {
-            holdLock = true
             val bakFile = File(dir, sharePreferencesName + SUFFIX_BAK)
             if (bakFile.exists()) {
                 bakFile.delete()
@@ -250,10 +234,6 @@ internal class OkSharedPreferencesImpl(
                 }
                 bakFile.renameTo(okSpFile)
             }
-            conditionVariable.close()
-            conditionVariable.block()
-            LogUtils.d(TAG, "saveDisk() holdLock $holdLock")
-            holdLock = false
         }
     }
 
