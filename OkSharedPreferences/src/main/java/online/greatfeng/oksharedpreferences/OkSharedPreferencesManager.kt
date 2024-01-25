@@ -48,12 +48,8 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
     }
 
     private val fileObserver by lazy {
-        object : OkFileObserver(listOf(dir), ALL_EVENTS) {
+        object : OkFileObserver(listOf(dir), DELETE) {
             override fun onEvent(event: Int, path: String?) {
-                LogUtils.d(
-                    TAG,
-                    "onEvent() called with: event = ${event}, path = $path"
-                )
                 if (event and DELETE != 0
                     && path != null
                     && path.endsWith(SUFFIX_OKSP)
@@ -64,15 +60,9 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
                             getOkSharedPreferences(name) as OkSharedPreferencesImpl
                         LogUtils.d(
                             TAG,
-                            "${Process.myPid()} onEvent() called with:name = $name , holdLock = ${
-                                okSharedPreferences
-                                    .holdLock
-                            }"
+                            "${Process.myPid()} onEvent() called with:name = $name "
                         )
-                        if (!okSharedPreferences.holdLock) {
-                            okSharedPreferences.loadDataFromDisk()
-                        }
-                        okSharedPreferences.conditionVariable.open()
+                        okSharedPreferences.loadDataFromDisk()
                     }
                 }
             }
