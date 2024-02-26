@@ -32,7 +32,7 @@ internal class OkSharedPreferencesImpl(
     }
 
     init {
-        loadDataFromDisk(migration)
+        loadDataFromDisk(migration, false)
     }
 
     companion object {
@@ -71,20 +71,26 @@ internal class OkSharedPreferencesImpl(
         }
     }
 
-    fun loadDataFromDisk(migration: SharedPreferences?) {
+    fun loadDataFromDisk(migration: SharedPreferences? = null, init: Boolean = false) {
+        LogUtils.d(TAG, "loadDataFromDisk() called with: migration = $migration, init = $init")
         val okSpFile = File(dir, sharePreferencesName + SUFFIX_OKSP)
-        if (!okSpFile.exists()) {
+        LogUtils.d(TAG, "loadDataFromDisk() called with: okSpFile.exists = ${okSpFile.exists()}")
+        if (init and !okSpFile.exists()) {
             okSpFile.createNewFile()
             migration?.let {
                 writeLock.lock()
                 try {
                     cacheMap.putAll(migration.all as Map<out String, Any>)
                     saveDisk()
+                    migration.edit().clear().apply()
                 } finally {
                     writeLock.unlock()
                 }
             }
             return
+        }
+        while (!okSpFile.exists()) {
+            Thread.yield()
         }
         val lastModified = okSpFile.lastModified()
         LogUtils.d(

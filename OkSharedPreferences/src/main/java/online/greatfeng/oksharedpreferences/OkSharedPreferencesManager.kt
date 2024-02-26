@@ -62,7 +62,7 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
                             TAG,
                             "${Process.myPid()} onEvent() called with:name = $name "
                         )
-                        okSharedPreferences.loadDataFromDisk(null)
+                        okSharedPreferences.loadDataFromDisk()
                     }
                 }
             }
