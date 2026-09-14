@@ -91,7 +91,7 @@ publishing {
 
                 withXml {
                     asNode().appendNode("properties")
-                        .appendNode("gpg.keyname", "95DC60737E87C11CAC959A8944910AE317A4EB70")
+                        .appendNode("gpg.keyname", "488C0CEF9C9199B767D914652BCEBA44DB93D926")
                 }
             }
         }
@@ -121,9 +121,14 @@ signing {
     val signingKeyId: String? by project
     val signingKey: String? by project
     val signingPassword: String? by project
-    if (!signingKeyId.isNullOrBlank() && !signingKey.isNullOrBlank()) {
-        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-        sign(publishing.publications["mavenAar"])
+    when {
+        !signingKeyId.isNullOrBlank() && !signingKey.isNullOrBlank() -> {
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+            sign(publishing.publications["mavenAar"])
+        }
+        hasProperty("signing.secretKeyRingFile") -> {
+            sign(publishing.publications["mavenAar"])
+        }
     }
 }
 

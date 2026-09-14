@@ -4,10 +4,10 @@
 centralPortalUsername=your_token_username
 centralPortalPassword=your_token_password
 
-# GPG signing (in-memory key, recommended for CI/local publish)
-signingKeyId=95DC60737E87C11CAC959A8944910AE317A4EB70
-signingKey=-----BEGIN PGP PRIVATE KEY BLOCK-----\n...\n-----END PGP PRIVATE KEY BLOCK-----
-signingPassword=your_gpg_passphrase
+# GPG signing (export with: gpg --export-secret-keys -o ~/.gradle/oksp-maven-secret.gpg <fingerprint>)
+signing.keyId=DB93D926
+signing.password=your_gpg_passphrase
+signing.secretKeyRingFile=C:/Users/you/.gradle/oksp-maven-secret.gpg
 
 # Legacy aliases (still supported by build.gradle.kts)
 # ossrhUsername=

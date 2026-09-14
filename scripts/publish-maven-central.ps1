@@ -14,9 +14,9 @@ function Test-GradleProperty([string]$Name) {
 $required = @(
     @{ Name = "centralPortalUsername"; Alt = "ossrhUsername" },
     @{ Name = "centralPortalPassword"; Alt = "ossrhPassword" },
-    @{ Name = "signingKeyId"; Alt = $null },
-    @{ Name = "signingKey"; Alt = $null },
-    @{ Name = "signingPassword"; Alt = $null }
+    @{ Name = "signing.keyId"; Alt = "signingKeyId" },
+    @{ Name = "signing.password"; Alt = "signingPassword" },
+    @{ Name = "signing.secretKeyRingFile"; Alt = $null }
 )
 
 $missing = @()
