@@ -1,0 +1,14 @@
+# Copy these entries to ~/.gradle/gradle.properties (do NOT commit secrets).
+
+# Sonatype Central Portal user token: https://central.sonatype.com/usertoken
+centralPortalUsername=your_token_username
+centralPortalPassword=your_token_password
+
+# GPG signing (in-memory key, recommended for CI/local publish)
+signingKeyId=95DC60737E87C11CAC959A8944910AE317A4EB70
+signingKey=-----BEGIN PGP PRIVATE KEY BLOCK-----\n...\n-----END PGP PRIVATE KEY BLOCK-----
+signingPassword=your_gpg_passphrase
+
+# Legacy aliases (still supported by build.gradle.kts)
+# ossrhUsername=
+# ossrhPassword=

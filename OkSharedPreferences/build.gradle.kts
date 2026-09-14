@@ -57,22 +57,12 @@ dependencies {
 
 publishing {
     publications {
-
         create<MavenPublication>("mavenAar") {
             groupId = "online.greatfeng"
             artifactId = "oksharedpreferences"
             version = "1.1.0"
             artifact("$buildDir/outputs/aar/OkSharedPreferences-release.aar")
-            // 发布 AAR 文件
-            signing {
-                sign(publishing.publications["mavenAar"])
 
-            }
-//            afterEvaluate {
-//                from(components["release"])
-//            }
-
-            // 配置 POM 文件
             pom {
                 name.set("OkSharedPreferences")
                 description.set("a better SharedPreferences")
@@ -94,12 +84,11 @@ publishing {
                 }
 
                 scm {
-                    connection.set("scm:git:https://github.com/changchengfeng/OkSharedPreferences.git")
-                    developerConnection.set("scm:git:https://github.com/changchengfeng/OkSharedPreferences.git")
+                    connection.set("scm:git:git@github.com:changchengfeng/OkSharedPreferences.git")
+                    developerConnection.set("scm:git:git@github.com:changchengfeng/OkSharedPreferences.git")
                     url.set("https://github.com/changchengfeng/OkSharedPreferences")
                 }
 
-                // 设置签名
                 withXml {
                     asNode().appendNode("properties")
                         .appendNode("gpg.keyname", "95DC60737E87C11CAC959A8944910AE317A4EB70")
@@ -108,29 +97,37 @@ publishing {
         }
     }
 
-
     repositories {
         maven {
+            name = "local"
             url = uri("$buildDir/repo")
         }
-//        maven {
-//            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-//            credentials {
-//                username = findProperty("ossrhUsername") as String
-//                password = findProperty("ossrhPassword") as String
-////                username = findProperty("username") as String
-////                password = findProperty("password") as String
-//            }
+        maven {
+            name = "MavenCentral"
+            url = uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
+            credentials {
+                username = findProperty("centralPortalUsername") as String?
+                    ?: findProperty("ossrhUsername") as String?
+                    ?: ""
+                password = findProperty("centralPortalPassword") as String?
+                    ?: findProperty("ossrhPassword") as String?
+                    ?: ""
+            }
+        }
     }
+}
 
+signing {
+    val signingKeyId: String? by project
+    val signingKey: String? by project
+    val signingPassword: String? by project
+    if (!signingKeyId.isNullOrBlank() && !signingKey.isNullOrBlank()) {
+        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+        sign(publishing.publications["mavenAar"])
+    }
+}
 
-//        maven {
-//            isAllowInsecureProtocol = true
-//            url = uri("http://greatfeng.online:9081/repository/maven-releases/")
-//            credentials {
-//                username = findProperty("localUsername") as String
-//                password = findProperty("localPassword") as String
-//            }
-//        }
+tasks.named("publishMavenAarPublicationToMavenCentralRepository") {
+    dependsOn("assembleRelease")
 }
 
