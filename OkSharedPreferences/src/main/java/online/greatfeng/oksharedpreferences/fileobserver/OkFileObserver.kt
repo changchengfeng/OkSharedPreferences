@@ -13,11 +13,6 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
 
     private var mDescriptors: IntArray? = null
 
-
-    protected fun finalize() {
-        stopWatching()
-    }
-
     fun startWatching() {
         if (mDescriptors == null) {
             mDescriptors =
@@ -81,95 +76,98 @@ internal abstract class OkFileObserver(val mFiles: List<File>, val mMask: Int) {
                 or DELETE_SELF or MOVE_SELF)
 
 
-        val s_observerThread = ObserverThread()
+        internal val s_observerThread = OkFileObserverThread()
 
         init {
             LogUtils.d(TAG, "s_observerThread.start() called")
             s_observerThread.start()
         }
     }
+}
 
+internal class OkFileObserverThread : Thread("OkFileObserver") {
+    private val mRealObservers = SparseArray<WeakReference<*>>()
+    private val m_fd: Int
 
-    class ObserverThread : Thread("OkFileObserver") {
-        private val m_observers = HashMap<Int, WeakReference<*>>()
-        private val mRealObservers = SparseArray<WeakReference<*>>()
-        private val m_fd: Int
+    init {
+        System.loadLibrary("OkSharedPreferences")
+        m_fd = nativeInit()
+        LogUtils.d(TAG, "init called m_fd $m_fd")
+    }
 
-        init {
-            System.loadLibrary("OkSharedPreferences")
-            m_fd = init()
-            LogUtils.d(TAG, "init called m_fd $m_fd")
-        }
+    override fun run() {
+        LogUtils.d(TAG, "run() m_fd $m_fd")
+        nativeObserve(m_fd)
+    }
 
-        override fun run() {
-            LogUtils.d(TAG, "run() m_fd $m_fd")
-            observe(m_fd)
-        }
-
-        fun startWatching(files: List<File>, mask: Int, observer: OkFileObserver): IntArray {
-            LogUtils.d(
-                TAG,
-                "startWatching() called with: files = $files, mask = $mask, observer = $observer"
-            )
-            val count = files.size
-            val paths = arrayOfNulls<String>(count)
-            for (i in 0 until count) {
-                paths[i] = files[i].absolutePath
-            }
-            LogUtils.d(TAG, "startWatching: ${Arrays.toString(paths)}")
-            val wfds = IntArray(count)
-            Arrays.fill(wfds, -1)
-            startWatching(m_fd, paths, mask, wfds)
-            val fileObserverWeakReference = WeakReference(observer)
-            synchronized(mRealObservers) {
-                for (wfd in wfds) {
-                    if (wfd >= 0) {
-                        mRealObservers.put(wfd, fileObserverWeakReference)
-                    }
-                }
-            }
-            LogUtils.d(TAG, "startWatching wfds : ${Arrays.toString(wfds)}")
-            return wfds
-        }
-
-        fun stopWatching(descriptors: IntArray?) {
-            LogUtils.d(TAG, "stopWatching() m_fd $m_fd , descriptors = $descriptors")
-            stopWatching(m_fd, descriptors)
-        }
-
-        fun onEvent(wfd: Int, mask: Int, path: String?) {
-            // look up our observer, fixing up the map if necessary...
-            var observer: OkFileObserver? = null
-            synchronized(mRealObservers) {
-                val weak = mRealObservers[wfd]
-                if (weak != null) {  // can happen with lots of events from a dead wfd
-                    observer = weak.get() as OkFileObserver?
-                    if (observer == null) {
-                        mRealObservers.remove(wfd)
-                    }
-                }
-            }
-
-            // ...then call out to the observer without the sync lock held
-            try {
-                observer?.onEvent(mask, path)
-            } catch (throwable: Throwable) {
-                LogUtils.wtf(
-                    TAG,
-                    "Unhandled exception in FileObserver $observer", throwable
-                )
-            }
-        }
-
-        private external fun init(): Int
-        private external fun observe(fd: Int)
-        private external fun startWatching(
-            fd: Int,
-            paths: Array<String?>,
-            mask: Int,
-            wfds: IntArray
+    fun startWatching(files: List<File>, mask: Int, observer: OkFileObserver): IntArray {
+        LogUtils.d(
+            TAG,
+            "startWatching() called with: files = $files, mask = $mask, observer = $observer"
         )
+        val count = files.size
+        val paths = arrayOfNulls<String>(count)
+        for (i in 0 until count) {
+            paths[i] = files[i].absolutePath
+        }
+        LogUtils.d(TAG, "startWatching: ${Arrays.toString(paths)}")
+        val wfds = IntArray(count)
+        Arrays.fill(wfds, -1)
+        nativeStartWatching(m_fd, paths, mask, wfds)
+        val fileObserverWeakReference = WeakReference(observer)
+        synchronized(mRealObservers) {
+            for (wfd in wfds) {
+                if (wfd >= 0) {
+                    mRealObservers.put(wfd, fileObserverWeakReference)
+                }
+            }
+        }
+        LogUtils.d(TAG, "startWatching wfds : ${Arrays.toString(wfds)}")
+        return wfds
+    }
 
-        private external fun stopWatching(fd: Int, wfds: IntArray?)
+    fun stopWatching(descriptors: IntArray?) {
+        LogUtils.d(TAG, "stopWatching() m_fd $m_fd , descriptors = $descriptors")
+        if (descriptors == null) {
+            return
+        }
+        nativeStopWatching(m_fd, descriptors)
+    }
+
+    fun onEvent(wfd: Int, mask: Int, path: String?) {
+        var observer: OkFileObserver? = null
+        synchronized(mRealObservers) {
+            val weak = mRealObservers[wfd]
+            if (weak != null) {
+                observer = weak.get() as OkFileObserver?
+                if (observer == null) {
+                    mRealObservers.remove(wfd)
+                }
+            }
+        }
+
+        try {
+            observer?.onEvent(mask, path)
+        } catch (throwable: Throwable) {
+            LogUtils.wtf(
+                TAG,
+                "Unhandled exception in FileObserver $observer", throwable
+            )
+        }
+    }
+
+    private external fun nativeInit(): Int
+    private external fun nativeObserve(fd: Int)
+    private external fun nativeStartWatching(
+        fd: Int,
+        paths: Array<String?>,
+        mask: Int,
+        wfds: IntArray
+    )
+
+    private external fun nativeStopWatching(fd: Int, wfds: IntArray)
+
+    companion object {
+        private const val TAG = "OkFileObserver"
     }
 }

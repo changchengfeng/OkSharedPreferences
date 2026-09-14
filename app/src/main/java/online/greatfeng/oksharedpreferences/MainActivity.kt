@@ -1,9 +1,9 @@
 package online.greatfeng.oksharedpreferences
 
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.os.Bundle
 import android.os.IBinder
@@ -14,162 +14,64 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
 import online.greatfeng.oksharedpreferences.ui.theme.OkSharedPreferencesTheme
 
 class MainActivity : ComponentActivity() {
 
+    private val messengerState = mutableStateOf<Messenger?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            OkSharedPreferencesTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting()
-                }
-            }
-        }
-        val testSharedPreferences =
-            getSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME, MODE_PRIVATE)
-        testSharedPreferences.edit().putInt(KEY_TEST_XXX, 9876).commit()
 
         bindService(
             Intent(applicationContext, SharedPreferenceService::class.java),
             object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                    Log.d(TAG, "onServiceConnected() called with: name = $name, service = $service")
-                    service?.let {
-                        messenger = Messenger(service)
-                    }
+                    Log.d(TAG, "onServiceConnected: name=$name")
+                    messengerState.value = service?.let { Messenger(it) }
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {
+                    messengerState.value = null
                 }
-
             },
             BIND_AUTO_CREATE
         )
 
-        getOkSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME).registerOnSharedPreferenceChangeListener(
-            object : OnSharedPreferenceChangeListener {
-                override fun onSharedPreferenceChanged(
-                    sharedPreferences: SharedPreferences?,
-                    key: String?
+        setContent {
+            OkSharedPreferencesTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    sharedPreferences?.let {
-                        key?.let {
-                            when (it) {
-                                KEY_TEST_BOOLEAN -> {
-                                    Log.i(
-                                        TAG,
-                                        "onSharedPreferenceChanged() called with: sharedPreferences = ${
-                                            sharedPreferences.getBoolean(
-                                                it,
-                                                false
-                                            )
-                                        }, key = $key"
-                                    )
-                                }
-
-                                KEY_TEST_FLOAT -> {
-                                    Log.i(
-                                        TAG,
-                                        "onSharedPreferenceChanged() called with: sharedPreferences = ${
-                                            sharedPreferences.getFloat(
-                                                it,
-                                                0.0f
-                                            )
-                                        }, key = $key"
-                                    )
-                                }
-
-                                KEY_TEST_INT -> {
-                                    Log.i(
-                                        TAG,
-                                        "onSharedPreferenceChanged() called with: sharedPreferences = ${
-                                            sharedPreferences.getInt(
-                                                it,
-                                                0
-                                            )
-                                        }, key = $key"
-                                    )
-                                }
-
-                                KEY_TEST_XXX -> {
-                                    Log.i(
-                                        TAG,
-                                        "onSharedPreferenceChanged() called with: sharedPreferences = ${
-                                            sharedPreferences.getInt(
-                                                it,
-                                                0
-                                            )
-                                        }, key = $key"
-                                    )
-                                }
-
-                                KEY_TEST_LONG -> {
-                                    Log.i(
-                                        TAG,
-                                        "onSharedPreferenceChanged() called with: sharedPreferences = ${
-                                            sharedPreferences.getLong(
-                                                it,
-                                                0L
-                                            )
-                                        }, key = $key"
-                                    )
-                                }
-
-                                KEY_TEST_STRING -> {
-                                    Log.i(
-                                        TAG,
-                                        "onSharedPreferenceChanged() called with: sharedPreferences = ${
-                                            sharedPreferences.getString(
-                                                it,
-                                                null
-                                            )
-                                        }, key = $key"
-                                    )
-                                }
-
-                                KEY_TEST_SET -> {
-                                    Log.i(
-                                        TAG,
-                                        "onSharedPreferenceChanged() called with: sharedPreferences = ${
-                                            sharedPreferences.getStringSet(
-                                                it,
-                                                null
-                                            )
-                                        }, key = $key"
-                                    )
-                                }
-
-                                else -> {}
-                            }
-                        }
-                    }
+                    OkSpApiDemoScreen(messenger = messengerState.value)
                 }
-            })
-
+            }
+        }
     }
 }
 
-
-private var messenger: Messenger? = null
 private const val TAG = "MainActivity"
 
 const val OKSHAREDPREFERENCES_TEST_NAME = "test"
@@ -181,200 +83,271 @@ const val KEY_TEST_STRING = "test_String"
 const val KEY_TEST_XXX = "test_XXX"
 const val KEY_TEST_SET = "test_Set"
 
+private const val MIGRATE_DEMO_NAME = "migrate_demo"
+private const val DELETE_DEMO_NAME = "delete_demo"
+private const val KEY_MIGRATE = "from_platform"
 
 @Composable
-fun Greeting() {
-    var value = 0
+fun OkSpApiDemoScreen(messenger: Messenger?) {
     val context = LocalContext.current
-    Column(modifier = Modifier.fillMaxSize()) {
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                val okSharedPreferences =
-                    context.getOkSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME)
-                val editor = okSharedPreferences.edit()
-                editor.putBoolean(KEY_TEST_BOOLEAN, true)
-                editor.putFloat(KEY_TEST_FLOAT, 3.1415926f)
-                editor.putInt(KEY_TEST_INT, 123456)
-                editor.putInt(KEY_TEST_XXX, value++)
-                editor.putLong(KEY_TEST_LONG, 987654321L)
-                editor.putString(
-                    KEY_TEST_STRING,
-                    "Stop watching for events. Some events may be in process, so events may continue to be reported even after this method completes. If monitoring is already stopped, this call has no effect."
-                )
-                editor.putStringSet(
-                    KEY_TEST_SET, setOf(
-                        "abc    这里的when表达式使用了没有参数的形式，而是直接在每个分支中写上条件。当yourValue小于80时，执行相应的代码块。如果需要执行其他比较，你可以根据实际情况添加相应的分支。d",
-                        "efg    请注意，toByteArray() 返回的是字节数组，其中每个字节表示 Float 的不同部分，这包括符号位、指数位和尾数位。如果你需要更精确地控制字节的顺序（例如，大端序或小端序），你可能需要使用 ByteBuffer 类。",
-                        "hjj    In the last line, (y = 5) is an assignment statement, and it cannot be used as part of the expression for the sum. If you need to modify a variable and use its value in an expression simultaneously, you should perform the assignment separately from the expression",
-                        "zxc    在 Kotlin 中，你可以使用 toByteArray() 方法将 Float 转化为字节数组。这方法存在于 Float 类的扩展函数中。"
-                    )
-                )
-                editor.commit()
-            },
-            content = {
-                Text("save_commit")
-            }
-        )
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                val okSharedPreferences =
-                    context.getOkSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME)
-                val editor = okSharedPreferences.edit()
-                editor.putBoolean(KEY_TEST_BOOLEAN, true)
-                editor.putFloat(KEY_TEST_FLOAT, 3.1415926f)
-                editor.putInt(KEY_TEST_INT, 123456)
-                editor.putInt(KEY_TEST_XXX, value++)
-                editor.putLong(KEY_TEST_LONG, 987654321L)
-                editor.putString(
-                    KEY_TEST_STRING,
-                    "Stop watching for events. Some events may be in process, so events may continue to be reported even after this method completes. If monitoring is already stopped, this call has no effect."
-                )
-                editor.putStringSet(
-                    KEY_TEST_SET, setOf(
-                        "abc    这里的when表达式使用了没有参数的形式，而是直接在每个分支中写上条件。当yourValue小于80时，执行相应的代码块。如果需要执行其他比较，你可以根据实际情况添加相应的分支。d",
-                        "efg    请注意，toByteArray() 返回的是字节数组，其中每个字节表示 Float 的不同部分，这包括符号位、指数位和尾数位。如果你需要更精确地控制字节的顺序（例如，大端序或小端序），你可能需要使用 ByteBuffer 类。",
-                        "hjj    In the last line, (y = 5) is an assignment statement, and it cannot be used as part of the expression for the sum. If you need to modify a variable and use its value in an expression simultaneously, you should perform the assignment separately from the expression",
-                        "zxc    在 Kotlin 中，你可以使用 toByteArray() 方法将 Float 转化为字节数组。这方法存在于 Float 类的扩展函数中。"
-                    )
-                )
-                editor.apply()
-            },
-            content = {
-                Text("save_apply")
-            }
-        )
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                val okSharedPreferences =
-                    context.getOkSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME)
-                okSharedPreferences.edit().clear().commit()
-            },
-            content = {
-                Text("clear")
-            }
-        )
+    var log by remember { mutableStateOf("Tap a button to exercise OkSharedPreferences APIs.\n") }
+    var counter by remember { mutableIntStateOf(0) }
+    val scrollState = rememberScrollState()
 
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                val okSharedPreferences =
-                    context.getOkSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME)
-                val testBoolean = okSharedPreferences.getBoolean(KEY_TEST_BOOLEAN, false)
-                Log.d(TAG, "testBoolean: $testBoolean")
-
-                val testFloat = okSharedPreferences.getFloat(KEY_TEST_FLOAT, 0f)
-                Log.d(TAG, "testFloat: $testFloat")
-
-                val testInt = okSharedPreferences.getInt(KEY_TEST_INT, 0)
-                Log.d(TAG, "testInt: $testInt")
-
-                val testXXX = okSharedPreferences.getInt(KEY_TEST_XXX, 0)
-                Log.d(TAG, "testXXX: $testXXX")
-
-                val testLong = okSharedPreferences.getLong(KEY_TEST_LONG, 0L)
-                Log.d(TAG, "testLong: $testLong")
-
-
-                val testString = okSharedPreferences.getString(KEY_TEST_STRING, "")
-                Log.d(TAG, "testString: $testString")
-
-                val testSet = okSharedPreferences.getStringSet(KEY_TEST_SET, setOf())
-                Log.d(TAG, "testSet: $testSet")
-            },
-            content = {
-                Text("show")
-            }
-        )
-
-        // other
-
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                messenger?.let {
-                    val msg = Message()
-                    msg.what = SharedPreferenceService.SAVE_COMMIT
-                    it.send(msg)
-                }
-            },
-            content = {
-                Text("other_save")
-            }
-        )
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                messenger?.let {
-                    val msg = Message()
-                    msg.what = SharedPreferenceService.SAVE_APPLY
-                    it.send(msg)
-                }
-            },
-            content = {
-                Text("other_save_apply")
-            }
-        )
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                messenger?.let {
-                    val msg = Message()
-                    msg.what = SharedPreferenceService.CLEAR
-                    it.send(msg)
-                }
-            },
-            content = {
-                Text("other_clear")
-            }
-        )
-        Button(
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight()
-                .padding(16.dp),
-            onClick = { /* 按钮点击时执行的操作 */
-                messenger?.let {
-                    val msg = Message()
-                    msg.what = SharedPreferenceService.SHOW
-                    it.send(msg)
-                }
-            },
-            content = {
-                Text("other_show")
-            }
-        )
+    val appendLog: (String) -> Unit = { message ->
+        Log.d(TAG, message)
+        log = if (log.isEmpty()) message else "$log\n$message"
     }
 
+    val sp = remember { context.getOkSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME) }
+    val demoListener = remember {
+        OnSharedPreferenceChangeListener { _, key ->
+            appendLog("onSharedPreferenceChanged: key=$key")
+        }
+    }
+
+    DisposableEffect(sp) {
+        sp.registerOnSharedPreferenceChangeListener(demoListener)
+        onDispose {
+            sp.unregisterOnSharedPreferenceChangeListener(demoListener)
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = log,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(12.dp)
+                .verticalScroll(rememberScrollState()),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace
+        )
+
+        Divider()
+
+        Column(
+            modifier = Modifier
+                .weight(2f)
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+        ) {
+            SectionTitle("Context extensions")
+            ApiButton("getOkSharedPreferences(name)") {
+                val instance = context.getOkSharedPreferences(OKSHAREDPREFERENCES_TEST_NAME)
+                appendLog("getOkSharedPreferences → $instance")
+            }
+            ApiButton("getOkSharedPreferences(name, migration=true)") {
+                context.getSharedPreferences(MIGRATE_DEMO_NAME, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_MIGRATE, "migrated_value")
+                    .commit()
+                context.deleteOkSharedPreferences(MIGRATE_DEMO_NAME)
+                val migrated = context.getOkSharedPreferences(MIGRATE_DEMO_NAME, migration = true)
+                val value = migrated.getString(KEY_MIGRATE, null)
+                appendLog("migration result: KEY_MIGRATE=$value (expected migrated_value)")
+            }
+            ApiButton("deleteOkSharedPreferences(name)") {
+                context.getOkSharedPreferences(DELETE_DEMO_NAME)
+                    .edit()
+                    .putInt("k", 42)
+                    .commit()
+                val deleted = context.deleteOkSharedPreferences(DELETE_DEMO_NAME)
+                val after = context.getOkSharedPreferences(DELETE_DEMO_NAME)
+                appendLog("deleteOkSharedPreferences → $deleted, contains(k)=${after.contains("k")}")
+            }
+            ApiButton("deleteSharedPreferences(context, name)") {
+                context.getOkSharedPreferences(DELETE_DEMO_NAME)
+                    .edit()
+                    .putInt("k", 99)
+                    .commit()
+                val deleted = deleteSharedPreferences(context, DELETE_DEMO_NAME)
+                appendLog("deleteSharedPreferences(Java alias) → $deleted")
+            }
+
+            SectionTitle("configureLimits / resetLimits")
+            ApiButton("read limits") {
+                appendLog(
+                    "maxDecodeBytesPerField=${OkSharedPreferences.maxDecodeBytesPerField}, " +
+                        "maxFileBytes=${OkSharedPreferences.maxFileBytes}"
+                )
+            }
+            ApiButton("configureLimits(8MB, 32MB)") {
+                OkSharedPreferences.configureLimits(
+                    maxDecodeBytesPerField = 8 * 1024 * 1024,
+                    maxFileBytes = 32 * 1024 * 1024
+                )
+                appendLog("configureLimits done (affects new reads/writes)")
+            }
+            ApiButton("resetLimits()") {
+                OkSharedPreferences.resetLimits()
+                appendLog("resetLimits → defaults restored")
+            }
+
+            SectionTitle("Read APIs")
+            ApiButton("getAll()") {
+                appendLog("getAll → ${sp.getAll()}")
+            }
+            ApiButton("getBoolean()") {
+                appendLog("getBoolean → ${sp.getBoolean(KEY_TEST_BOOLEAN, false)}")
+            }
+            ApiButton("getInt()") {
+                appendLog("getInt → ${sp.getInt(KEY_TEST_INT, -1)}")
+            }
+            ApiButton("getLong()") {
+                appendLog("getLong → ${sp.getLong(KEY_TEST_LONG, -1L)}")
+            }
+            ApiButton("getFloat()") {
+                appendLog("getFloat → ${sp.getFloat(KEY_TEST_FLOAT, -1f)}")
+            }
+            ApiButton("getString()") {
+                appendLog("getString → ${sp.getString(KEY_TEST_STRING, null)}")
+            }
+            ApiButton("getStringSet()") {
+                appendLog("getStringSet → ${sp.getStringSet(KEY_TEST_SET, null)}")
+            }
+            ApiButton("contains(existing key)") {
+                appendLog("contains($KEY_TEST_INT) → ${sp.contains(KEY_TEST_INT)}")
+            }
+            ApiButton("contains(missing key)") {
+                appendLog("contains(__missing__) → ${sp.contains("__missing__")}")
+            }
+
+            SectionTitle("Editor — put + commit")
+            ApiButton("putBoolean + commit") {
+                val ok = sp.edit().putBoolean(KEY_TEST_BOOLEAN, true).commit()
+                appendLog("putBoolean + commit → $ok")
+            }
+            ApiButton("putInt + commit") {
+                val ok = sp.edit().putInt(KEY_TEST_INT, 123456).commit()
+                appendLog("putInt + commit → $ok")
+            }
+            ApiButton("putLong + commit") {
+                val ok = sp.edit().putLong(KEY_TEST_LONG, 987654321L).commit()
+                appendLog("putLong + commit → $ok")
+            }
+            ApiButton("putFloat + commit") {
+                val ok = sp.edit().putFloat(KEY_TEST_FLOAT, 3.1415926f).commit()
+                appendLog("putFloat + commit → $ok")
+            }
+            ApiButton("putString + commit") {
+                val ok = sp.edit().putString(KEY_TEST_STRING, "hello_oksp").commit()
+                appendLog("putString + commit → $ok")
+            }
+            ApiButton("putStringSet + commit") {
+                val ok = sp.edit().putStringSet(KEY_TEST_SET, setOf("a", "b", "c")).commit()
+                appendLog("putStringSet + commit → $ok")
+            }
+            ApiButton("put all types + commit") {
+                val ok = sp.edit()
+                    .putBoolean(KEY_TEST_BOOLEAN, true)
+                    .putFloat(KEY_TEST_FLOAT, 3.1415926f)
+                    .putInt(KEY_TEST_INT, 123456)
+                    .putInt(KEY_TEST_XXX, counter++)
+                    .putLong(KEY_TEST_LONG, 987654321L)
+                    .putString(KEY_TEST_STRING, "batch_commit")
+                    .putStringSet(KEY_TEST_SET, setOf("x", "y", "z"))
+                    .commit()
+                appendLog("put all + commit → $ok, counter=$counter")
+            }
+
+            SectionTitle("Editor — put + apply / remove / clear")
+            ApiButton("put all types + apply") {
+                sp.edit()
+                    .putBoolean(KEY_TEST_BOOLEAN, false)
+                    .putFloat(KEY_TEST_FLOAT, 2.718f)
+                    .putInt(KEY_TEST_INT, 654321)
+                    .putInt(KEY_TEST_XXX, counter++)
+                    .putLong(KEY_TEST_LONG, 123456789L)
+                    .putString(KEY_TEST_STRING, "batch_apply")
+                    .putStringSet(KEY_TEST_SET, setOf("apply1", "apply2"))
+                    .apply()
+                appendLog("put all + apply (async save), counter=$counter")
+            }
+            ApiButton("remove(key) + commit") {
+                val ok = sp.edit().remove(KEY_TEST_STRING).commit()
+                appendLog("remove($KEY_TEST_STRING) + commit → $ok")
+            }
+            ApiButton("clear() + commit") {
+                val ok = sp.edit().clear().commit()
+                appendLog("clear + commit → $ok")
+            }
+
+            SectionTitle("OkSharedPreferences APIs")
+            ApiButton("reload()") {
+                sp.reload()
+                appendLog("reload done, getAll size=${sp.getAll().size}")
+            }
+            ApiButton("registerOnSharedPreferenceChangeListener") {
+                sp.registerOnSharedPreferenceChangeListener(demoListener)
+                appendLog("registerOnSharedPreferenceChangeListener (duplicate register is safe)")
+            }
+            ApiButton("unregisterOnSharedPreferenceChangeListener") {
+                sp.unregisterOnSharedPreferenceChangeListener(demoListener)
+                appendLog("unregisterOnSharedPreferenceChangeListener")
+            }
+            ApiButton("clearOnSharedPreferenceChangeListener") {
+                sp.clearOnSharedPreferenceChangeListener()
+                appendLog("clearOnSharedPreferenceChangeListener (all listeners removed)")
+            }
+
+            SectionTitle("Cross-process (SharedPreferenceService)")
+            ApiButton("remote: commit") {
+                sendToService(messenger, SharedPreferenceService.SAVE_COMMIT, appendLog)
+            }
+            ApiButton("remote: apply") {
+                sendToService(messenger, SharedPreferenceService.SAVE_APPLY, appendLog)
+            }
+            ApiButton("remote: clear") {
+                sendToService(messenger, SharedPreferenceService.CLEAR, appendLog)
+            }
+            ApiButton("remote: show (logcat)") {
+                sendToService(messenger, SharedPreferenceService.SHOW, appendLog)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 4.dp),
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
+private fun ApiButton(label: String, onClick: () -> Unit) {
+    Button(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        onClick = onClick
+    ) {
+        Text(label)
+    }
+}
+
+private fun sendToService(
+    messenger: Messenger?,
+    what: Int,
+    appendLog: (String) -> Unit
+) {
+    if (messenger == null) {
+        appendLog("Messenger not connected yet")
+        return
+    }
+    messenger.send(Message.obtain(null, what))
+    appendLog("sent message what=$what to SharedPreferenceService")
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun OkSpApiDemoPreview() {
     OkSharedPreferencesTheme {
-        Greeting()
+        OkSpApiDemoScreen(messenger = null)
     }
 }

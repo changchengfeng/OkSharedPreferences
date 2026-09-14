@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.nio.ByteBuffer
 
-const val MAX_LEN = 0x80000000
+internal const val MAX_LEN = Int.MAX_VALUE
 
 internal fun String?.checkKey(): Boolean {
     if (this == null || length >= MAX_LEN) {
@@ -15,56 +15,91 @@ internal fun String?.checkKey(): Boolean {
 }
 
 internal fun String?.checkValue(): Boolean {
-    if (this != null && length >= MAX_LEN) {
+    if (this == null) {
+        return true
+    }
+    if (length >= MAX_LEN) {
         LogUtils.e(TAG, "$this value length must less $MAX_LEN")
+        return false
+    }
+    if (this.toByteArray().size > OkSharedPreferences.maxDecodeBytesPerField) {
+        LogUtils.e(
+            TAG,
+            "value byte size ${this.toByteArray().size} exceeds maxDecodeBytesPerField " +
+                OkSharedPreferences.maxDecodeBytesPerField
+        )
         return false
     }
     return true
 }
 
 internal fun MutableSet<String>?.checkValue(): Boolean {
-    if (this != null && this.any { it.length >= MAX_LEN }) {
-        LogUtils.e(TAG, "$this value length must less $MAX_LEN")
+    if (this == null) {
+        return true
+    }
+    val maxBytes = OkSharedPreferences.maxDecodeBytesPerField
+    if (this.any { it.length >= MAX_LEN || it.toByteArray().size > maxBytes }) {
+        LogUtils.e(TAG, "$this value exceeds max length or maxDecodeBytesPerField $maxBytes")
         return false
     }
     return true
 }
 
+private const val TAG = "OkSharedPreferences"
+
+internal class DecodeException(message: String) : IllegalStateException(message)
+
+internal fun ByteBuffer.requireRemaining(n: Int) {
+    if (remaining() < n) {
+        throw DecodeException("truncated buffer: need $n bytes, have ${remaining()}")
+    }
+}
+
 internal fun ByteBuffer.getLen(): Int {
+    requireRemaining(1)
     val size = get().toUByte().toInt()
-    var len: Int
-    when (size) {
+    val len = when (size) {
         0x81 -> {
-            len = this.get().toUByte().toInt()
+            requireRemaining(1)
+            get().toUByte().toInt()
         }
 
         0x82 -> {
-            len = this.getShort().toUShort().toInt()
+            requireRemaining(2)
+            getShort().toUShort().toInt()
         }
 
         0x83 -> {
-            val byte1 = this.get().toUByte().toInt()
-            val byte2 = this.get().toUByte().toInt()
-            val byte3 = this.get().toUByte().toInt()
-            len = (byte1 shl 16) + (byte2 shl 8) + byte3
+            requireRemaining(3)
+            val byte1 = get().toUByte().toInt()
+            val byte2 = get().toUByte().toInt()
+            val byte3 = get().toUByte().toInt()
+            (byte1 shl 16) + (byte2 shl 8) + byte3
         }
 
         0x84 -> {
-            len = this.getInt().toUInt().toInt()
+            requireRemaining(4)
+            val raw = getInt()
+            if (raw < 0) {
+                throw DecodeException("invalid length: negative 32-bit value")
+            }
+            raw
         }
 
-        else -> {
-            len = size
-        }
+        else -> size
+    }
+    val maxDecodeBytes = OkSharedPreferences.maxDecodeBytesPerField
+    if (len < 0 || len > maxDecodeBytes) {
+        throw DecodeException("invalid length: $len (max $maxDecodeBytes)")
     }
     return len
 }
 
-private const val TAG = "OkSharedPreferences"
-
 internal fun ByteBuffer.getString(): String {
     val len = getLen()
-//    LogUtils.d(TAG, "getString() len $len")
+    if (len > remaining()) {
+        throw DecodeException("length $len exceeds remaining ${remaining()}")
+    }
     val byteArray = ByteArray(len)
     get(byteArray)
     return String(byteArray)
@@ -72,12 +107,9 @@ internal fun ByteBuffer.getString(): String {
 
 internal fun ByteBuffer.getSet(): Set<String> {
     val len = getLen()
-//    LogUtils.d(TAG, "getSet() len $len")
     val mutableSet = mutableSetOf<String>()
     for (i in 0 until len) {
-        val str = getString()
-//        LogUtils.d(TAG, "getSet() str $str")
-        mutableSet.add(str)
+        mutableSet.add(getString())
     }
     return mutableSet
 }
@@ -114,7 +146,7 @@ internal fun Int.toDerLVByteArray(): ByteArray {
         temp = temp shr 8
     } while (temp > 0)
 
-    var data = 0x80 + byteLen
+    val data = 0x80 + byteLen
     val sliceBytes = allocate.array().sliceArray(0 until byteLen)
     sliceBytes.reverse()
     return ByteBuffer.allocate(byteLen + 1).put(data.toByte()).put(sliceBytes).array()

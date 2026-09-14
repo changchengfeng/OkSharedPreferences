@@ -40,3 +40,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Monkey stress-test output
+monkey-runs/
