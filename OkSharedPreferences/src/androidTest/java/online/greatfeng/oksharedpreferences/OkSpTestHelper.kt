@@ -38,6 +38,11 @@ internal object OkSpTestHelper {
         return File(okSpDir(context), storageBase + OkSharedPreferencesImpl.SUFFIX_OKSP)
     }
 
+    fun okSpLockFile(context: Context, name: String): File {
+        val storageBase = OkSpSigning.storageBaseName(context, name)
+        return File(okSpDir(context), ".$storageBase.lock")
+    }
+
     fun storageBaseName(context: Context, logicalName: String): String {
         return OkSpSigning.storageBaseName(context, logicalName)
     }

@@ -3,6 +3,7 @@ package online.greatfeng.oksharedpreferences
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 internal const val MAX_LEN = Int.MAX_VALUE
 
@@ -22,10 +23,11 @@ internal fun String?.checkValue(): Boolean {
         LogUtils.e(TAG, "$this value length must less $MAX_LEN")
         return false
     }
-    if (this.toByteArray().size > OkSharedPreferences.maxDecodeBytesPerField) {
+    val byteSize = this.toByteArray(StandardCharsets.UTF_8).size
+    if (byteSize > OkSharedPreferences.maxDecodeBytesPerField) {
         LogUtils.e(
             TAG,
-            "value byte size ${this.toByteArray().size} exceeds maxDecodeBytesPerField " +
+            "value byte size $byteSize exceeds maxDecodeBytesPerField " +
                 OkSharedPreferences.maxDecodeBytesPerField
         )
         return false
@@ -38,7 +40,7 @@ internal fun MutableSet<String>?.checkValue(): Boolean {
         return true
     }
     val maxBytes = OkSharedPreferences.maxDecodeBytesPerField
-    if (this.any { it.length >= MAX_LEN || it.toByteArray().size > maxBytes }) {
+    if (this.any { it.length >= MAX_LEN || it.toByteArray(StandardCharsets.UTF_8).size > maxBytes }) {
         LogUtils.e(TAG, "$this value exceeds max length or maxDecodeBytesPerField $maxBytes")
         return false
     }
@@ -102,7 +104,7 @@ internal fun ByteBuffer.getString(): String {
     }
     val byteArray = ByteArray(len)
     get(byteArray)
-    return String(byteArray)
+    return String(byteArray, StandardCharsets.UTF_8)
 }
 
 internal fun ByteBuffer.getSet(): Set<String> {
@@ -115,7 +117,7 @@ internal fun ByteBuffer.getSet(): Set<String> {
 }
 
 internal fun String.toDerLVByteArray(): ByteArray {
-    val byteArray = this.toByteArray()
+    val byteArray = this.toByteArray(StandardCharsets.UTF_8)
     val len = byteArray.size
     val derLVByteArray = len.toDerLVByteArray()
     return ByteBuffer.allocate(derLVByteArray.size + len).put(derLVByteArray)

@@ -67,9 +67,24 @@ class OkSpManagerApiInstrumentedTest {
         OkSpTestHelper.okSpDir(context).mkdirs()
         val file = OkSpTestHelper.okSpFile(context, name)
         file.writeBytes(byteArrayOf(1, 2, 3))
+        val lock = OkSpTestHelper.okSpLockFile(context, name)
+        lock.createNewFile()
         OkSpTestHelper.track(name)
         assertTrue(context.deleteOkSharedPreferences(name))
         assertFalse(file.exists())
+        assertFalse(lock.exists())
+    }
+
+    @Test
+    fun deleteSharedPreferences_whenCached_removesSignedLockFile() {
+        val name = OkSpTestHelper.uniqueName("mgr_del_lock_cached")
+        val prefs = context.getOkSharedPreferences(name)
+        prefs.edit().putInt("k", 1).commit()
+        val lock = OkSpTestHelper.okSpLockFile(context, name)
+        assertTrue(lock.exists())
+        assertTrue(context.deleteOkSharedPreferences(name))
+        assertFalse(OkSpTestHelper.okSpFile(context, name).exists())
+        assertFalse(lock.exists())
     }
 
     @Test

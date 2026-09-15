@@ -118,9 +118,8 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
             handler.removeCallbacksAndMessages(cached)
             cached.clearData(true)
             cacheMap.remove(name, cached)
-        } else {
-            deleteFilesLocked(name)
         }
+        deleteFilesLocked(name)
         val storageBaseName = OkSpSigning.storageBaseName(context, name)
         return !File(dir, storageBaseName + SUFFIX_OKSP).exists()
     }
@@ -136,7 +135,10 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
                 File(dir, storageBaseName + SUFFIX_OKSP).delete()
                 File(dir, storageBaseName + SUFFIX_BAK).delete()
                 File(dir, storageBaseName + SUFFIX_TMP).delete()
-                File(dir, ".$name.lock").delete()
+                lockFile.delete()
+                if (name != storageBaseName) {
+                    File(dir, ".$name.lock").delete()
+                }
             }
         }
     }
