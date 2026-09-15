@@ -36,6 +36,7 @@ internal class OkSharedPreferencesImpl(
     /** Keys modified locally since the last successful disk sync or external reload. */
     private val dirtyKeys = mutableSetOf<String>()
     private var dirtyClear = false
+    private var syncedDiskSnapshot = DiskSnapshot.missing()
     private val listeners = mutableSetOf<OnSharedPreferenceChangeListener>()
     private val pendingNotifyKeys = LinkedHashSet<String>()
     private val notifyRunnable = Runnable {
@@ -183,8 +184,11 @@ internal class OkSharedPreferencesImpl(
             }
             withExclusiveFileLock {
                 if (!destroyed && memoryGeneration == diskGeneration) {
-                    changedKeys = loadFromDiskLocked()
-                    clearDirtyState()
+                    val okSpFile = okSpFile()
+                    if (!syncedDiskSnapshot.matches(okSpFile)) {
+                        changedKeys = loadFromDiskLocked()
+                        clearDirtyState()
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -275,6 +279,11 @@ internal class OkSharedPreferencesImpl(
         if (dirtyClear) {
             return LinkedHashMap(cacheMap)
         }
+        val okSpFile = okSpFile()
+        if (syncedDiskSnapshot.matches(okSpFile)) {
+            // Disk unchanged since our last load/save: cache already reflects disk + local edits.
+            return LinkedHashMap(cacheMap)
+        }
         val diskMap = readDiskMapLocked()
         val merged = LinkedHashMap(diskMap)
         for (key in dirtyKeys) {
@@ -288,24 +297,34 @@ internal class OkSharedPreferencesImpl(
         return merged
     }
 
+    private fun okSpFile(): File = File(dir, sharePreferencesName + SUFFIX_OKSP)
+
+    private fun refreshSyncedDiskSnapshot() {
+        syncedDiskSnapshot = DiskSnapshot.capture(okSpFile())
+    }
+
     private fun loadFromDiskLocked(): List<String> {
         val okSpFile = File(dir, sharePreferencesName + SUFFIX_OKSP)
         val bakFile = File(dir, sharePreferencesName + SUFFIX_BAK)
         recoverBakIfNeeded(okSpFile, bakFile)
         if (!okSpFile.exists()) {
             if (cacheMap.isEmpty()) {
+                refreshSyncedDiskSnapshot()
                 return emptyList()
             }
             val removed = cacheMap.keys.toList()
             cacheMap.clear()
+            refreshSyncedDiskSnapshot()
             return removed
         }
         val bytes = readDiskBytesLocked()
             ?: return if (cacheMap.isEmpty()) {
+                refreshSyncedDiskSnapshot()
                 emptyList()
             } else {
                 val removed = cacheMap.keys.toList()
                 cacheMap.clear()
+                refreshSyncedDiskSnapshot()
                 removed
             }
         val newMap = try {
@@ -314,7 +333,9 @@ internal class OkSharedPreferencesImpl(
             LogUtils.e(TAG, "parse failed, keep previous cache. file=${okSpFile.absolutePath}", e)
             return emptyList()
         }
-        return swapCacheAndCollectChanges(newMap)
+        val changed = swapCacheAndCollectChanges(newMap)
+        refreshSyncedDiskSnapshot()
+        return changed
     }
 
     private fun parseMap(byteArray: ByteArray): Map<String, Any> {
@@ -421,6 +442,7 @@ internal class OkSharedPreferencesImpl(
                 LogUtils.e(TAG, "failed to delete tmp file ${tmpFile.absolutePath}")
             }
         }
+        refreshSyncedDiskSnapshot()
         syncCacheAfterSave(merged)
     }
 
@@ -433,40 +455,40 @@ internal class OkSharedPreferencesImpl(
     private fun writeEntry(out: DataOutputStream, key: String, value: Any) {
         when (value) {
             is Boolean -> {
-                out.write(key.toDerLVByteArray())
+                out.writeDerLVUtf8(key)
                 out.writeByte(B)
                 out.writeByte(if (value) 1 else 0)
             }
 
             is Float -> {
-                out.write(key.toDerLVByteArray())
+                out.writeDerLVUtf8(key)
                 out.writeByte(F)
                 out.writeFloat(value)
             }
 
             is Int -> {
-                out.write(key.toDerLVByteArray())
+                out.writeDerLVUtf8(key)
                 out.writeByte(I)
                 out.writeInt(value)
             }
 
             is Long -> {
-                out.write(key.toDerLVByteArray())
+                out.writeDerLVUtf8(key)
                 out.writeByte(L)
                 out.writeLong(value)
             }
 
             is String -> {
-                out.write(key.toDerLVByteArray())
+                out.writeDerLVUtf8(key)
                 out.writeByte(S)
-                out.write(value.toDerLVByteArray())
+                out.writeDerLVUtf8(value)
             }
 
             is Set<*> -> {
-                out.write(key.toDerLVByteArray())
+                out.writeDerLVUtf8(key)
                 out.writeByte(T)
                 @Suppress("UNCHECKED_CAST")
-                out.write((value as Set<String>).toDerLVByteArray())
+                out.writeDerLVStringSet(value as Set<String>)
             }
 
             else -> LogUtils.e(TAG, "skip unsupported value type for key=$key value=$value")

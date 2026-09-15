@@ -153,3 +153,35 @@ internal fun Int.toDerLVByteArray(): ByteArray {
     sliceBytes.reverse()
     return ByteBuffer.allocate(byteLen + 1).put(data.toByte()).put(sliceBytes).array()
 }
+
+internal fun DataOutputStream.writeDerLVLength(len: Int) {
+    if (len < 0x80) {
+        writeByte(len)
+        return
+    }
+    var temp = len
+    val bytes = ByteArray(4)
+    var byteLen = 0
+    do {
+        bytes[byteLen] = (temp and 0xFF).toByte()
+        byteLen++
+        temp = temp shr 8
+    } while (temp > 0)
+    writeByte(0x80 + byteLen)
+    for (i in byteLen - 1 downTo 0) {
+        writeByte(bytes[i].toInt())
+    }
+}
+
+internal fun DataOutputStream.writeDerLVUtf8(text: String) {
+    val bytes = text.toByteArray(StandardCharsets.UTF_8)
+    writeDerLVLength(bytes.size)
+    write(bytes)
+}
+
+internal fun DataOutputStream.writeDerLVStringSet(values: Set<String>) {
+    writeDerLVLength(values.size)
+    for (value in values) {
+        writeDerLVUtf8(value)
+    }
+}

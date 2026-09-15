@@ -45,5 +45,5 @@ OkSharedPreferences.configureLimits(
 
 The release is available on Maven Central.
 ```
-implementation("online.greatfeng:oksharedpreferences:1.1.1")
+implementation("online.greatfeng:oksharedpreferences:1.1.2")
 ```

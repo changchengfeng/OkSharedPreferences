@@ -17,6 +17,7 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
 
     companion object {
         private const val TAG = "OkSharedPreferencesManager"
+        private const val RELOAD_DEBOUNCE_MS = 50L
 
         @Volatile
         private var instantiation: OkSharedPreferencesManager? = null
@@ -67,7 +68,7 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
                 handler.postAtTime(
                     { okSharedPreferences.reloadFromDiskOnExternalChange() },
                     okSharedPreferences,
-                    SystemClock.uptimeMillis()
+                    SystemClock.uptimeMillis() + RELOAD_DEBOUNCE_MS
                 )
             }
         }
