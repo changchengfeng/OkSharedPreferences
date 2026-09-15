@@ -1,0 +1,44 @@
+---
+description: GitHub 提交身份与 Contributors 保护（仅 changchengfeng）
+alwaysApply: true
+---
+
+# GitHub 提交规则（OkSharedPreferences）
+
+## 身份（提交前必查）
+
+本仓库只允许：
+
+- `changchengfeng <changchengfeng001@gmail.com>`
+
+```powershell
+git config --show-origin --get user.email
+```
+
+## 禁止 Cursor 归因
+
+commit message **不得**出现：
+
+- `Co-authored-by: Cursor <cursoragent@cursor.com>`
+- `Made-with: Cursor`
+
+GitHub 会把 `cursoragent` 算作 Contributors。
+
+## 提交方式
+
+1. **优先**：Write 写 message 文件 → `git -c trailer.ifexists=doNothing commit -F <file> --cleanup=verbatim`
+2. **空提交 / 刷新**：`powershell -File scripts/git-empty-commit.ps1 -Message "..."`  
+   （内部用 `git.exe commit-tree`，避免 PowerShell 把 `commit-tree` 解析成 `commit`）
+3. **禁止**在未 verify 前 `git push`
+
+## 提交后必 verify
+
+```powershell
+git log -1 --format="%an <%ae>%n%B"
+```
+
+含 Cursor trailer 或邮箱不对 → 修正后再 push。
+
+## 详细流程
+
+读个人 skill **`github-git-commit`**（`~/.cursor/skills/github-git-commit/SKILL.md`）。
