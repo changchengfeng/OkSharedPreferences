@@ -9,7 +9,6 @@ import java.io.DataOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -172,10 +171,10 @@ internal class OkSharedPreferencesImpl(
     }
 
     internal fun reloadFromDiskOnExternalChange() {
-        reloadFromDiskInternal()
+        reloadFromDiskInternal(force = true)
     }
 
-    private fun reloadFromDiskInternal() {
+    private fun reloadFromDiskInternal(force: Boolean = false) {
         var changedKeys: List<String> = emptyList()
         writeLock.lock()
         try {
@@ -185,7 +184,7 @@ internal class OkSharedPreferencesImpl(
             withExclusiveFileLock {
                 if (!destroyed && memoryGeneration == diskGeneration) {
                     val okSpFile = okSpFile()
-                    if (!syncedDiskSnapshot.matches(okSpFile)) {
+                    if (force || !syncedDiskSnapshot.matches(okSpFile)) {
                         changedKeys = loadFromDiskLocked()
                         clearDirtyState()
                     }
@@ -496,16 +495,7 @@ internal class OkSharedPreferencesImpl(
     }
 
     private fun withExclusiveFileLock(block: () -> Unit) {
-        val lockFile = File(fileLock)
-        if (!lockFile.exists()) {
-            lockFile.parentFile?.mkdirs()
-            lockFile.createNewFile()
-        }
-        RandomAccessFile(lockFile, "rw").use { raf ->
-            raf.channel.lock().use {
-                block()
-            }
-        }
+        OkSpFileLocks.withExclusiveLock(fileLock, block)
     }
 
     private fun commitToMemory(

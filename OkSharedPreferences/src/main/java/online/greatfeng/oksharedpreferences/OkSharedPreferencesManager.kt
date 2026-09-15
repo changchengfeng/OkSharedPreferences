@@ -9,7 +9,6 @@ import online.greatfeng.oksharedpreferences.OkSharedPreferencesImpl.Companion.SU
 import online.greatfeng.oksharedpreferences.OkSharedPreferencesImpl.Companion.SUFFIX_TMP
 import online.greatfeng.oksharedpreferences.fileobserver.OkFileObserver
 import java.io.File
-import java.io.RandomAccessFile
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -131,15 +130,13 @@ internal class OkSharedPreferencesManager private constructor(val context: Conte
         if (!lockFile.exists()) {
             lockFile.createNewFile()
         }
-        RandomAccessFile(lockFile, "rw").use { raf ->
-            raf.channel.lock().use {
-                File(dir, storageBaseName + SUFFIX_OKSP).delete()
-                File(dir, storageBaseName + SUFFIX_BAK).delete()
-                File(dir, storageBaseName + SUFFIX_TMP).delete()
-                lockFile.delete()
-                if (name != storageBaseName) {
-                    File(dir, ".$name.lock").delete()
-                }
+        OkSpFileLocks.withExclusiveLock(lockFile.absolutePath) {
+            File(dir, storageBaseName + SUFFIX_OKSP).delete()
+            File(dir, storageBaseName + SUFFIX_BAK).delete()
+            File(dir, storageBaseName + SUFFIX_TMP).delete()
+            lockFile.delete()
+            if (name != storageBaseName) {
+                File(dir, ".$name.lock").delete()
             }
         }
     }

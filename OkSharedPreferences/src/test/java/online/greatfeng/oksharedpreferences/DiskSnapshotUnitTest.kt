@@ -36,4 +36,16 @@ class DiskSnapshotUnitTest {
         assertFalse(snapshot.matches(file))
         dir.deleteRecursively()
     }
+
+    @Test
+    fun capture_doesNotMatchSameLengthRewriteWithSameLastModified() {
+        val dir = Files.createTempDirectory("oksp-snapshot").toFile()
+        val file = File(dir, "prefs.oksp")
+        file.writeBytes(byteArrayOf(1, 2, 3, 4))
+        val snapshot = DiskSnapshot.capture(file)
+        file.writeBytes(byteArrayOf(9, 2, 3, 4))
+        file.setLastModified(snapshot.lastModified)
+        assertFalse(snapshot.matches(file))
+        dir.deleteRecursively()
+    }
 }
