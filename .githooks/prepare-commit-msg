@@ -1,0 +1,3 @@
+#!/bin/sh
+# Prevent Cursor from adding cursoragent as a GitHub contributor.
+grep -v 'Co-authored-by: Cursor <cursoragent@cursor.com>' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
