@@ -136,3 +136,7 @@ tasks.named("publishMavenAarPublicationToMavenCentralRepository") {
     dependsOn("assembleRelease")
 }
 
+tasks.named("signMavenAarPublication") {
+    dependsOn("bundleReleaseAar")
+}
+

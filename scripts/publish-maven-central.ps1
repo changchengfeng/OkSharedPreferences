@@ -29,7 +29,7 @@ foreach ($item in $required) {
 }
 
 if ($missing.Count -gt 0) {
-    Write-Host "Missing properties in $gradleProps:"
+    Write-Host "Missing properties in ${gradleProps}:"
     $missing | ForEach-Object { Write-Host "  - $_" }
     Write-Host ""
     Write-Host "See gradle.properties.example in repo root."
